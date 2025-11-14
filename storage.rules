@@ -1,0 +1,40 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isImageUpload() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    function isUnder2MB() {
+      return request.resource.size < 2 * 1024 * 1024;
+    }
+
+    match /topicCovers/{coverFile} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isImageUpload() && isUnder2MB();
+      allow delete: if isSignedIn();
+    }
+
+    match /topicAttachments/{topicId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && isImageUpload() && isUnder2MB();
+      allow delete: if isSignedIn();
+    }
+
+    match /userAvatars/{userId}/{fileName} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isImageUpload() && isUnder2MB();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Block all other paths by default
+    match /{allPaths=**} {
+      allow read: if false;
+      allow write: if false;
+    }
+  }
+}

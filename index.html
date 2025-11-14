@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BorsaForum | Profesyonel Borsa Topluluğu</title>
+    <meta
+      name="description"
+      content="Borsa İstanbul yatırımcıları için gerçek zamanlı forum. Analizler, stratejiler ve topluluk desteği tek platformda."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%23142338'/%3E%3Cpath d='M18 32.4V15.6l12 8.4-12 8.4Z' fill='%23F5B400'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body class="theme-light">
+    <div class="page">
+      <header class="site-header" data-shadow="false">
+        <div class="site-header__inner">
+          <div class="brand">
+            <a class="brand__logo" href="/">
+              <span class="brand__mark">BF</span>
+              <span class="brand__text">
+                <strong>BorsaForum</strong>
+                <span class="brand__tagline">Borsa İstanbul Topluluğu</span>
+              </span>
+            </a>
+            <button
+              class="brand__menu-toggle"
+              type="button"
+              id="mobileMenuToggle"
+              aria-label="Menüyü Aç"
+              aria-expanded="false"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
+          </div>
+          <div class="site-search">
+            <form id="global-search-form" role="search">
+              <label class="sr-only" for="global-search-input">Forumda ara</label>
+              <span class="icon icon-search" aria-hidden="true"></span>
+              <input
+                id="global-search-input"
+                name="q"
+                type="search"
+                placeholder="Başlık, analiz veya kullanıcı ara"
+                autocomplete="off"
+              />
+            </form>
+          </div>
+          <nav class="site-nav" aria-label="Ana menü">
+            <button class="nav-link" type="button" data-view="boards">
+              Forumlar
+            </button>
+            <button class="nav-link" type="button" data-view="calendar">
+              Takvim
+            </button>
+            <button class="nav-link" type="button" data-view="insights">
+              Görünümler
+            </button>
+            <button class="nav-link" type="button" data-view="market">
+              Piyasa Verisi
+            </button>
+          </nav>
+          <div class="site-actions">
+            <button
+              id="createTopicAction"
+              class="button button--primary"
+              type="button"
+            >
+              <span class="button-icon icon icon-plus"></span>
+              <span class="button-text">Yeni Konu</span>
+            </button>
+            <button
+              id="createBoardAction"
+              class="button button--ghost mobile-only"
+              type="button"
+              title="Forum Oluştur"
+            >
+              <span class="icon icon-grid"></span>
+            </button>
+            <div class="auth-actions" id="authActions">
+              <button class="button button--ghost" type="button" id="openSignIn">
+                Giriş Yap
+              </button>
+              <button
+                class="button button--outline"
+                type="button"
+                id="openSignUp"
+              >
+                Üye Ol
+              </button>
+            </div>
+            <div class="notifications-menu" id="notificationsMenu" hidden>
+              <button
+                class="icon-button notifications-menu__trigger"
+                id="notificationsTrigger"
+                type="button"
+                aria-label="Bildirimler"
+              >
+                <span class="icon icon-bell"></span>
+                <span class="notifications-menu__badge" id="notificationsBadge" hidden>0</span>
+              </button>
+              <div class="notifications-menu__dropdown" id="notificationsDropdown" role="menu">
+                <div class="notifications-menu__header">
+                  <h3>Bildirimler</h3>
+                  <button
+                    class="icon-button icon-button--sm"
+                    type="button"
+                    id="markAllReadButton"
+                    aria-label="Tümünü okundu işaretle"
+                  >
+                    <span class="icon icon-check"></span>
+                  </button>
+                </div>
+                <div class="notifications-menu__list" id="notificationsList">
+                  <div class="notifications-menu__empty">
+                    <p>Henüz bildirim yok</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="user-menu" id="userMenu" hidden>
+              <button
+                class="user-menu__trigger"
+                id="userMenuTrigger"
+                type="button"
+                aria-label="Profil menüsü"
+              >
+                <span class="user-menu__avatar" id="userAvatar">U</span>
+                <span class="user-menu__name" id="userDisplayName">Kullanıcı</span>
+                <span class="icon icon-chevron" aria-hidden="true"></span>
+              </button>
+              <div class="user-menu__dropdown" role="menu">
+                <div class="user-menu__header">
+                  <span id="userEmailLabel">-</span>
+                  <span class="user-menu__status" id="userStatusLabel">Ücretsiz Üye</span>
+                </div>
+                <button class="dropdown-item" type="button" data-action="profile">
+                  Profilim
+                </button>
+                <button class="dropdown-item" type="button" data-action="bookmarks">
+                  Kaydedilenler
+                </button>
+                <button class="dropdown-item" type="button" data-action="settings">
+                  Ayarlar
+                </button>
+                <hr />
+                <button class="dropdown-item danger" type="button" id="signOutButton">
+                  Oturumu Kapat
+                </button>
+              </div>
+            </div>
+            <button
+              class="icon-button"
+              type="button"
+              id="themeToggle"
+              aria-label="Tema değiştir"
+            >
+              <span class="icon icon-theme"></span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Mobil Bottom Navigation -->
+      <nav class="bottom-nav" id="bottomNav" aria-label="Mobil navigasyon">
+        <button class="bottom-nav__item" type="button" data-view="boards" aria-label="Forumlar">
+          <span class="bottom-nav__icon icon icon-grid"></span>
+          <span class="bottom-nav__label">Forumlar</span>
+        </button>
+        <button class="bottom-nav__item" type="button" id="mobileCreateTopic" aria-label="Yeni Konu">
+          <span class="bottom-nav__icon bottom-nav__icon--primary icon icon-plus"></span>
+          <span class="bottom-nav__label">Yeni Konu</span>
+        </button>
+        <button class="bottom-nav__item" type="button" id="mobileNotifications" aria-label="Bildirimler">
+          <span class="bottom-nav__icon icon icon-bell"></span>
+          <span class="bottom-nav__badge" id="mobileNotificationsBadge" hidden>0</span>
+          <span class="bottom-nav__label">Bildirimler</span>
+        </button>
+        <button class="bottom-nav__item" type="button" id="mobileProfile" aria-label="Profil">
+          <span class="bottom-nav__icon bottom-nav__icon--avatar" id="mobileProfileAvatar">U</span>
+          <span class="bottom-nav__label">Profil</span>
+        </button>
+      </nav>
+
+      <section class="hero-banner">
+        <div class="hero-banner__inner">
+          <div class="hero-banner__content">
+            <span class="hero-badge">Canlı Forum</span>
+            <h1>Borsa İstanbul için profesyonel yatırımcı topluluğu</h1>
+            <p>
+              Güncel analizler, teknik göstergeler ve strateji tartışmaları. BIST100 ve
+              VIOP başta olmak üzere farklı enstrümanlara dair dinamik forum konuları.
+            </p>
+            <div class="hero-cta">
+              <button
+                class="button button--primary"
+                type="button"
+                id="heroCreateTopic"
+              >
+                İlk paylaşımını yap
+              </button>
+              <button class="button button--ghost" type="button" id="heroViewBoards">
+                Aktif konuları incele
+              </button>
+            </div>
+          </div>
+          <div class="hero-banner__stats" role="presentation">
+            <div class="stat-card">
+              <span class="stat-card__label">Açık Konu</span>
+              <strong class="stat-card__value" id="statTopics">0</strong>
+              <span class="stat-card__meta">Toplam konu</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card__label">Yorum</span>
+              <strong class="stat-card__value" id="statPosts">0</strong>
+              <span class="stat-card__meta">Toplam yorum</span>
+            </div>
+            <div class="stat-card">
+              <span class="stat-card__label">Forum Alanı</span>
+              <strong class="stat-card__value" id="statBoards">0</strong>
+              <span class="stat-card__meta">Aktif forum</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <main class="forum-shell">
+        <aside class="board-rail" id="boardRail" aria-label="Forum kategorileri">
+          <div class="panel">
+            <header class="panel__header">
+              <div>
+                <h2>Forumlar</h2>
+                <p>Analiz, strateji ve hisse odaklı tartışma alanları.</p>
+              </div>
+              <button
+                class="icon-button"
+                type="button"
+                id="boardRefreshButton"
+                title="Listeyi yenile"
+                aria-label="Forum listesi yenile"
+              >
+                <span class="icon icon-refresh" aria-hidden="true"></span>
+              </button>
+            </header>
+            <div class="panel__body">
+              <div class="board-filter">
+                <label class="sr-only" for="board-search-input">Forum ara</label>
+                <span class="icon icon-search"></span>
+                <input
+                  id="board-search-input"
+                  type="search"
+                  placeholder="Başlık veya etiket ara"
+                  autocomplete="off"
+                />
+              </div>
+              <ul class="board-list" id="boardList" role="list"></ul>
+              <div class="empty-state" id="boardEmptyState" hidden>
+                <strong>Henüz forum oluşturmadım</strong>
+                <p>Yeni kategori açarak topluluğu başlatabilirsiniz.</p>
+                <button
+                  class="button button--outline"
+                  type="button"
+                  id="createBoardButton"
+                >
+                  Yeni forum alanı oluştur
+                </button>
+              </div>
+              <div class="skeleton-list" id="boardSkeleton">
+                <div class="skeleton skeleton--board"></div>
+                <div class="skeleton skeleton--board"></div>
+                <div class="skeleton skeleton--board"></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="topic-hub" aria-live="polite">
+          <div class="panel topic-hub__panel">
+            <header class="topic-hub__header">
+              <div class="topic-breadcrumb">
+                <button id="boardsBackButton" type="button" class="breadcrumb-root">
+                  Forumlar
+                </button>
+                <span class="icon icon-chevron-right" aria-hidden="true"></span>
+                <span class="topic-breadcrumb__current" id="boardTitle">
+                  Borsa İstanbul Genel
+                </span>
+              </div>
+              <div class="topic-hub__actions">
+                <div class="topic-stats">
+                  <span><strong id="boardStatTopics">-</strong> konu</span>
+                  <span><strong id="boardStatPosts">-</strong> mesaj</span>
+                  <span><strong id="boardStatMembers">-</strong> yazar</span>
+                </div>
+                <button
+                  id="openCreateTopic"
+                  class="button button--primary"
+                  type="button"
+                >
+                  Konu Aç
+                </button>
+              </div>
+            </header>
+            <div class="topic-hub__subheader">
+              <p id="boardDescription">
+                BIST100, VIOP ve hisse odaklı tüm genel sohbetler burada.
+              </p>
+              <div class="topic-toolbar">
+                <label class="toolbar-field">
+                  <span>Filtre</span>
+                  <select id="topicFilterSelect">
+                    <option value="all">Tüm konular</option>
+                    <option value="unanswered">Yanıtsız</option>
+                    <option value="watching">Takip Ettiklerim</option>
+                    <option value="popular">En popüler</option>
+                  </select>
+                </label>
+                <label class="toolbar-field">
+                  <span>Sırala</span>
+                  <select id="topicSortSelect">
+                    <option value="active">Son aktivite</option>
+                    <option value="recent">En yeni</option>
+                    <option value="views">En çok görüntülenen</option>
+                    <option value="replies">En fazla yanıt</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div class="topic-table__wrapper">
+              <table class="topic-table" aria-describedby="boardTitle">
+                <thead>
+                  <tr>
+                    <th scope="col">Konu</th>
+                    <th scope="col">Başlatan</th>
+                    <th scope="col">Yanıt</th>
+                    <th scope="col">Görüntüleme</th>
+                    <th scope="col">Son Mesaj</th>
+                  </tr>
+                </thead>
+                <tbody id="topicTableBody"></tbody>
+              </table>
+              <div class="empty-state" id="topicsEmptyState" hidden>
+                <strong id="topicsEmptyTitle">Bu forumda konu oluştur</strong>
+                <p id="topicsEmptyMessage">Paylaşımı yaparak tartışmayı başlat.</p>
+                <button
+                  class="button button--primary"
+                  type="button"
+                  id="emptyCreateTopic"
+                >
+                  Konu Aç
+                </button>
+              </div>
+              <div class="skeleton-list" id="topicsSkeleton">
+                <div class="skeleton skeleton--topic"></div>
+                <div class="skeleton skeleton--topic"></div>
+                <div class="skeleton skeleton--topic"></div>
+              </div>
+            </div>
+          </div>
+
+          <section class="topic-detail" id="topicDetail" hidden>
+            <header class="topic-detail__header">
+              <div>
+                <button class="back-link" id="closeTopicDetail" type="button">
+                  <span class="icon icon-chevron-left" aria-hidden="true"></span>
+                  Konulara dön
+                </button>
+                <h2 id="topicDetailTitle">Konu başlığı</h2>
+                <p class="topic-detail__meta" id="topicDetailMeta"></p>
+                <div class="topic-detail__tags" id="topicDetailTags"></div>
+              </div>
+              <div class="topic-detail__stats">
+                <span><strong id="topicDetailReplies">0</strong> yanıt</span>
+                <span><strong id="topicDetailViews">0</strong> görüntüleme</span>
+                <span><strong id="topicDetailWatchers">0</strong> takipçi</span>
+              </div>
+            </header>
+
+            <div class="post-list" id="postList"></div>
+
+            <footer class="topic-reply">
+              <div id="replyAuthNotice" class="alert alert--info">
+                Yanıt yazmak için giriş yapmalısınız.
+              </div>
+              <form id="replyForm" hidden>
+                <div id="replyQuote" class="reply-quote" hidden>
+                  <div class="reply-quote__header">
+                    <strong id="replyQuoteAuthor"></strong>
+                    <button type="button" class="reply-quote__close" id="replyQuoteClose" aria-label="Alıntıyı kaldır">
+                      <span class="icon icon-close"></span>
+                    </button>
+                  </div>
+                  <div class="reply-quote__body" id="replyQuoteBody"></div>
+                </div>
+                <label class="form-field">
+                  <span id="replyLabel">Yanıtınız</span>
+                  <textarea
+                    id="replyText"
+                    name="reply"
+                    rows="5"
+                    required
+                    maxlength="2000"
+                    placeholder="Yorumunuzu yazın, teknik analiz veya grafik linkleri ekleyin."
+                  ></textarea>
+                </label>
+                <div class="reply-toolbar">
+                  <div class="reply-actions">
+                    <label class="file-input">
+                      <input
+                        type="file"
+                        id="replyAttachmentInput"
+                        accept="image/*"
+                      />
+                      <span class="icon icon-attachment"></span>
+                      Görsel ekle
+                    </label>
+                    <span class="reply-attachment__name" id="replyAttachmentName"></span>
+                  </div>
+                  <button class="button button--primary" type="submit" id="replySubmit">
+                    Yanıt Gönder
+                  </button>
+                </div>
+              </form>
+            </footer>
+          </section>
+        </section>
+
+        <aside class="insight-rail" aria-label="Forum özet">
+          <div class="panel">
+            <header class="panel__header">
+              <div>
+                <h3>Trend Konular</h3>
+                <p>Son 48 saatte öne çıkan tartışmalar.</p>
+              </div>
+              <button
+                class="icon-button"
+                id="refreshTrending"
+                type="button"
+                title="Trend konuları yenile"
+              >
+                <span class="icon icon-refresh"></span>
+              </button>
+            </header>
+            <ul class="trend-list" id="trendingList"></ul>
+          </div>
+
+        </aside>
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <div class="footer-brand">
+            <span class="brand__mark brand__mark--sm">BF</span>
+            <div>
+              <strong>BorsaForum</strong>
+              <p>Şeffaf ve güvenilir borsa topluluğu.</p>
+            </div>
+          </div>
+          <nav class="footer-nav" aria-label="Alt menü">
+            <a href="#">Destek</a>
+            <a href="#">Kullanım Şartları</a>
+            <a href="#">KVKK</a>
+            <a href="#">İletişim</a>
+          </nav>
+          <p class="footer-copy">© <span id="footerYear"></span> BorsaForum. Tüm hakları saklıdır.</p>
+        </div>
+      </footer>
+    </div>
+
+    <dialog class="dialog" id="topicDialog">
+      <form method="dialog" class="dialog__surface" id="createTopicForm">
+        <header class="dialog__header">
+          <h2>Yeni Konu Aç</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body">
+          <p class="dialog__hint">
+            Borsa İstanbul topluluk kurallarına uygun, değer katan başlıklar açın.
+          </p>
+          <label class="form-field">
+            <span>Forum</span>
+            <select id="topicBoardSelect" required></select>
+          </label>
+          <label class="form-field">
+            <span>Konu Başlığı</span>
+            <input
+              type="text"
+              id="topicTitleInput"
+              name="title"
+              maxlength="120"
+              required
+              placeholder="BIST100 için haftalık strateji"
+            />
+          </label>
+          <label class="form-field">
+            <span>Özet / İlk Mesaj</span>
+            <textarea
+              id="topicBodyInput"
+              name="body"
+              rows="8"
+              maxlength="4000"
+              required
+              placeholder="Görüşünü detaylandır, teknik/temel analiz paylaş."
+            ></textarea>
+          </label>
+          <label class="form-field">
+            <span>Etiketler</span>
+            <input
+              type="text"
+              id="topicTagsInput"
+              name="tags"
+              maxlength="120"
+              placeholder="bist100, viop, bilanço"
+            />
+            <small>Etiketleri virgülle ayırın. En fazla beş etiket.</small>
+          </label>
+          <label class="form-field">
+            <span>Öne Çıkan Kapak</span>
+            <input type="file" id="topicCoverInput" accept="image/*" />
+            <small>İsteğe bağlı. Maksimum 1 MB.</small>
+          </label>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--ghost" type="button" data-dialog-close>
+            Vazgeç
+          </button>
+          <button class="button button--primary" type="submit" id="topicDialogSubmit">
+            Konu Oluştur
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="dialog" id="authDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <h2 id="authDialogTitle">Hesabına Giriş Yap</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body auth-dialog__body">
+          <div class="auth-tabs">
+            <button
+              class="auth-tab active"
+              type="button"
+              data-auth-view="sign-in"
+            >
+              Giriş Yap
+            </button>
+            <button class="auth-tab" type="button" data-auth-view="sign-up">
+              Üye Ol
+            </button>
+            <button class="auth-tab" type="button" data-auth-view="reset">
+              Şifre Sıfırla
+            </button>
+          </div>
+          <form id="signInForm" class="auth-form" autocomplete="on">
+            <label class="form-field">
+              <span>E-posta</span>
+              <input type="email" name="email" required autocomplete="email" />
+            </label>
+            <label class="form-field">
+              <span>Parola</span>
+              <input
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+              />
+            </label>
+            <button class="button button--primary full-width" type="submit">
+              Giriş Yap
+            </button>
+            <button
+              class="button button--outline full-width"
+              type="button"
+              id="googleSignIn"
+            >
+              Google ile devam et
+            </button>
+          </form>
+          <form id="signUpForm" class="auth-form" hidden autocomplete="on">
+            <label class="form-field">
+              <span>Kullanıcı Adı</span>
+              <input
+                type="text"
+                name="username"
+                required
+                minlength="3"
+                maxlength="20"
+                pattern="[a-zA-Z0-9_]+"
+                placeholder="örn: yatirimci123"
+                autocomplete="username"
+              />
+              <small class="muted-text">3-20 karakter, sadece harf, rakam ve alt çizgi</small>
+            </label>
+            <label class="form-field">
+              <span>E-posta</span>
+              <input type="email" name="email" required autocomplete="email" />
+            </label>
+            <label class="form-field">
+              <span>Parola</span>
+              <input
+                type="password"
+                name="password"
+                required
+                minlength="6"
+                autocomplete="new-password"
+              />
+            </label>
+            <label class="form-field">
+              <span>Parola (Tekrar)</span>
+              <input
+                type="password"
+                name="confirmPassword"
+                required
+                minlength="6"
+                autocomplete="new-password"
+              />
+            </label>
+            <button class="button button--primary full-width" type="submit">
+              Üyelik Oluştur
+            </button>
+          </form>
+          <form id="resetPasswordForm" class="auth-form" hidden autocomplete="on">
+            <label class="form-field">
+              <span>E-posta</span>
+              <input type="email" name="email" required autocomplete="email" />
+            </label>
+            <button class="button button--primary full-width" type="submit">
+              Sıfırlama bağlantısı gönder
+            </button>
+            <p class="muted">
+              Gelen kutunu ve spam klasörünü kontrol etmeyi unutma.
+            </p>
+          </form>
+        </section>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="boardDialog">
+      <form method="dialog" class="dialog__surface" id="createBoardForm">
+        <header class="dialog__header">
+          <h2>Yeni Forum Alanı</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body">
+          <label class="form-field">
+            <span>Başlık</span>
+            <input
+              type="text"
+              id="boardTitleInput"
+              maxlength="80"
+              required
+              placeholder="BIST100 Analizleri"
+            />
+          </label>
+          <label class="form-field">
+            <span>Açıklama</span>
+            <textarea
+              id="boardDescriptionInput"
+              rows="3"
+              maxlength="300"
+              required
+              placeholder="Kısa açıklama, kurallar veya kapsam."
+            ></textarea>
+          </label>
+          <label class="form-field">
+            <span>İkon</span>
+            <input
+              type="text"
+              id="boardIconInput"
+              maxlength="2"
+              placeholder="📈"
+            />
+            <small>İsteğe bağlı. Emoji veya kısa metin.</small>
+          </label>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--ghost" type="button" data-dialog-close>
+            İptal
+          </button>
+          <button class="button button--primary" type="submit" id="boardDialogSubmit">
+            Forum Oluştur
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog class="dialog" id="profileDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <h2>Kullanıcı Profili</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body profile-dialog__body">
+          <div class="profile-header">
+            <div class="profile-avatar" id="profileAvatar">U</div>
+            <div class="profile-info">
+              <h3 id="profileName">Kullanıcı</h3>
+              <p id="profileEmail" class="muted">-</p>
+              <p id="profileMemberSince" class="muted">-</p>
+            </div>
+          </div>
+
+          <div class="profile-stats">
+            <div class="stat-item">
+              <div class="stat-value" id="profilePostCount">0</div>
+              <div class="stat-label">Yorum</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="profileReactionCount">0</div>
+              <div class="stat-label">Beğeni</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="profileTopicCount">0</div>
+              <div class="stat-label">Konu</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-value" id="profileActivityDays">0</div>
+              <div class="stat-label">Aktif Gün</div>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h4>Uzmanlık Alanları</h4>
+            <div class="profile-expertise" id="profileExpertise">
+              <span class="expertise-tag">Hesaplanıyor...</span>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h4>En Çok Beğenilen Yorum</h4>
+            <div class="profile-top-post" id="profileTopPost">
+              <p class="muted">Henüz beğenilen yorum yok</p>
+            </div>
+          </div>
+
+          <div class="profile-section">
+            <h4>Forum Aktifliği</h4>
+            <div class="profile-activity" id="profileActivity">
+              <p class="muted">Hesaplanıyor...</p>
+            </div>
+          </div>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--primary" type="button" data-dialog-close>
+            Kapat
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <section class="notifications" aria-live="polite" aria-atomic="true">
+      <output id="messageArea" class="message-area"></output>
+    </section>
+
+    <script type="module" src="scripts/firebase-init.js"></script>
+    <script type="module" src="scripts/app.js"></script>
+  </body>
+</html>
