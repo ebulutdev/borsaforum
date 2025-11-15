@@ -122,7 +122,8 @@ service cloud.firestore {
 
     // Follow relationships scoped by user
     match /userFollows/{userId} {
-      allow read, write: if isSignedIn() && request.auth.uid == userId;
+      allow read: if true; // Herkes okuyabilir (takipçi sayısı hesaplamak için)
+      allow write: if isSignedIn() && request.auth.uid == userId; // Sadece kendi listesini yazabilir
     }
 
     // Metadata collections restricted to admins
@@ -154,12 +155,16 @@ service cloud.firestore {
         && request.resource.data.keys().hasAll(["username", "displayName", "email"])
         && isStringBetween(request.resource.data.username, 3, 20)
         && isStringBetween(request.resource.data.displayName, 2, 120)
-        && isStringBetween(request.resource.data.email, 5, 200);
+        && isStringBetween(request.resource.data.email, 5, 200)
+        && isOptionalString(request.resource.data.bio, 200);
       allow update: if isSignedIn() 
         && request.auth.uid == userId
+        // updateDoc ile sadece displayName, bio ve updatedAt güncellenebilir
         && resource.data.username == request.resource.data.username // username değiştirilemez
         && resource.data.email == request.resource.data.email // email değiştirilemez
-        && isStringBetween(request.resource.data.displayName, 2, 120);
+        && (resource.data.createdAt == request.resource.data.createdAt || !resource.data.createdAt) // createdAt değiştirilemez
+        && isStringBetween(request.resource.data.displayName, 2, 120) // displayName güncellenebilir
+        && isOptionalString(request.resource.data.bio, 200); // bio güncellenebilir (opsiyonel)
     }
 
     // Notifications

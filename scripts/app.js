@@ -6,6 +6,9 @@ import {
   sendEmailVerification,
   signOut,
   onAuthStateChanged,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
 } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
 import {
   collection,
@@ -51,6 +54,7 @@ const state = {
   attemptedSeed: false,
   viewedPosts: new Set(),
   replyingTo: null,
+  pendingScrollPostId: null,
   totalPostsCount: 0,
   totalTopicsCount: 0,
   uniqueAuthors: new Set(),
@@ -144,6 +148,9 @@ const selectors = {
   refreshTrending: document.getElementById("refreshTrending"),
   trendingList: document.getElementById("trendingList"),
   messageArea: document.getElementById("messageArea"),
+  membersList: document.getElementById("membersList"),
+  refreshMembers: document.getElementById("refreshMembers"),
+  toggleMembersPanel: document.getElementById("toggleMembersPanel"),
   statTopics: document.getElementById("statTopics"),
   statPosts: document.getElementById("statPosts"),
   statBoards: document.getElementById("statBoards"),
@@ -155,12 +162,33 @@ const selectors = {
   notificationsBadge: document.getElementById("notificationsBadge"),
   notificationsDropdown: document.getElementById("notificationsDropdown"),
   notificationsList: document.getElementById("notificationsList"),
+  notificationsDialog: document.getElementById("notificationsDialog"),
   markAllReadButton: document.getElementById("markAllReadButton"),
+  userMenuDialog: document.getElementById("userMenuDialog"),
+  userAvatarDialog: document.getElementById("userAvatarDialog"),
+  userDisplayNameDialog: document.getElementById("userDisplayNameDialog"),
+  userEmailLabelDialog: document.getElementById("userEmailLabelDialog"),
+  userStatusLabelDialog: document.getElementById("userStatusLabelDialog"),
+  signOutButtonDialog: document.getElementById("signOutButtonDialog"),
+  bookmarksDialog: document.getElementById("bookmarksDialog"),
+  bookmarksList: document.getElementById("bookmarksList"),
+  settingsDialog: document.getElementById("settingsDialog"),
+  settingsDisplayName: document.getElementById("settingsDisplayName"),
+  settingsBio: document.getElementById("settingsBio"),
+  settingsEmailNotifications: document.getElementById("settingsEmailNotifications"),
+  settingsReplyNotifications: document.getElementById("settingsReplyNotifications"),
+  settingsFollowNotifications: document.getElementById("settingsFollowNotifications"),
+  settingsTheme: document.getElementById("settingsTheme"),
+  settingsEmailVerified: document.getElementById("settingsEmailVerified"),
+  settingsEmailStatus: document.getElementById("settingsEmailStatus"),
+  settingsChangePassword: document.getElementById("settingsChangePassword"),
+  settingsSaveButton: document.getElementById("settingsSaveButton"),
   profileDialog: document.getElementById("profileDialog"),
   profileAvatar: document.getElementById("profileAvatar"),
   profileName: document.getElementById("profileName"),
   profileEmail: document.getElementById("profileEmail"),
   profileMemberSince: document.getElementById("profileMemberSince"),
+  profileBio: document.getElementById("profileBio"),
   profilePostCount: document.getElementById("profilePostCount"),
   profileReactionCount: document.getElementById("profileReactionCount"),
   profileTopicCount: document.getElementById("profileTopicCount"),
@@ -282,6 +310,7 @@ function updateFollowingState(following) {
   state.following = next;
   state.followingSet = new Set(next);
   renderFollowedTopics();
+  renderBookmarks(); // Bookmarks'ı da güncelle
   refreshFollowButtons();
   renderTopics();
 }
@@ -440,12 +469,18 @@ function showToast(message, type = "info") {
 function openDialog(dialog) {
   if (dialog && typeof dialog.showModal === "function" && !dialog.open) {
     dialog.showModal();
+    // Dialog açıkken body scroll'unu gizle
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
   }
 }
 
 function closeDialog(dialog) {
   if (dialog && dialog.open) {
     dialog.close();
+    // Dialog kapandığında body scroll'unu geri getir
+    document.body.style.overflow = "";
+    document.documentElement.style.overflow = "";
   }
 }
 
@@ -682,6 +717,31 @@ function showBoardsView() {
   // Topic detail'i gizle
   selectors.topicDetail?.setAttribute("hidden", "hidden");
   
+  // Forum shell'den members-view class'ını kaldır
+  const forumShell = document.querySelector(".forum-shell");
+  if (forumShell) {
+    forumShell.classList.remove("members-view-active");
+  }
+  
+  // Topic hub'ı göster
+  const topicHub = document.querySelector(".topic-hub");
+  if (topicHub) {
+    topicHub.removeAttribute("hidden");
+  }
+  
+  // Ana rail'deki insight-rail'i göster
+  const insightRail = document.querySelector(".insight-rail");
+  if (insightRail) {
+    insightRail.removeAttribute("hidden");
+    insightRail.classList.remove("members-view-fullwidth");
+  }
+  
+  // Top Üyeler panelini gizle (sadece boards view'de)
+  const topMembersPanel = document.getElementById("topMembersPanel");
+  if (topMembersPanel) {
+    topMembersPanel.setAttribute("hidden", "hidden");
+  }
+  
   // Board listesini göster
   if (selectors.boardList) {
     const boardRail = selectors.boardList.closest(".board-rail");
@@ -716,6 +776,258 @@ function showBoardsView() {
   }
 }
 
+function showMembersView() {
+  // Tüm görünümleri gizle
+  selectors.topicDetail?.setAttribute("hidden", "hidden");
+  const topicHub = document.querySelector(".topic-hub");
+  if (topicHub) {
+    topicHub.setAttribute("hidden", "hidden");
+  }
+  
+  // Mobilde board-rail'i gizle, desktop'ta göster
+  const boardRail = selectors.boardList?.closest(".board-rail");
+  if (boardRail) {
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      boardRail.setAttribute("hidden", "hidden");
+    } else {
+      boardRail.removeAttribute("hidden");
+    }
+  }
+  
+  // Ana rail'deki insight-rail'i göster
+  const insightRail = document.querySelector(".insight-rail");
+  if (insightRail) {
+    insightRail.removeAttribute("hidden");
+    // Mobilde full-width class ekle
+    const isMobile = window.innerWidth <= 768;
+    if (isMobile) {
+      insightRail.classList.add("members-view-fullwidth");
+    } else {
+      insightRail.classList.remove("members-view-fullwidth");
+    }
+  }
+  
+  // Forum shell'e members-view class'ı ekle
+  const forumShell = document.querySelector(".forum-shell");
+  if (forumShell) {
+    forumShell.classList.add("members-view-active");
+  }
+  
+  // Top Üyeler panelini göster
+  const topMembersPanel = document.getElementById("topMembersPanel");
+  if (topMembersPanel) {
+    topMembersPanel.removeAttribute("hidden");
+  }
+  
+  // Navbar'daki nav-link aktif durumunu güncelle
+  document.querySelectorAll(".nav-link[data-view]").forEach(link => {
+    link.classList.remove("active");
+    if (link.dataset.view === "members") {
+      link.classList.add("active");
+    }
+  });
+  
+  // Top üyeleri yükle ve göster
+  loadTopMembers();
+  
+  // Scroll et
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function loadTopMembers() {
+  if (!selectors.membersList) return;
+  
+  try {
+    // Skeleton göster
+    selectors.membersList.innerHTML = `
+      <div class="skeleton-list">
+        <div class="skeleton skeleton--member"></div>
+        <div class="skeleton skeleton--member"></div>
+        <div class="skeleton skeleton--member"></div>
+        <div class="skeleton skeleton--member"></div>
+        <div class="skeleton skeleton--member"></div>
+      </div>
+    `;
+    
+    // Tüm kullanıcı profillerini al
+    const profilesSnapshot = await getDocs(collection(db, "userProfiles"));
+    const profiles = {};
+    profilesSnapshot.docs.forEach(doc => {
+      profiles[doc.id] = { id: doc.id, ...doc.data() };
+    });
+    
+    // Tüm yorumları al
+    const postsSnapshot = await getDocs(collection(db, "forumPosts"));
+    const userStats = {};
+    
+    postsSnapshot.docs.forEach(doc => {
+      const post = doc.data();
+      const uid = post.authorUid;
+      if (!uid) return;
+      
+      if (!userStats[uid]) {
+        userStats[uid] = {
+          uid,
+          postCount: 0,
+          topicCount: 0,
+          totalReactions: 0,
+          followerCount: 0
+        };
+      }
+      
+      userStats[uid].postCount++;
+      
+      // Reaksiyonları say
+      if (post.reactions && typeof post.reactions === 'object') {
+        Object.values(post.reactions).forEach(userIds => {
+          if (Array.isArray(userIds)) {
+            userStats[uid].totalReactions += userIds.length;
+          }
+        });
+      }
+    });
+    
+    // Tüm konuları al
+    const topicsSnapshot = await getDocs(collection(db, "forumTopics"));
+    topicsSnapshot.docs.forEach(doc => {
+      const topic = doc.data();
+      const uid = topic.authorUid;
+      if (!uid) return;
+      
+      if (!userStats[uid]) {
+        userStats[uid] = {
+          uid,
+          postCount: 0,
+          topicCount: 0,
+          totalReactions: 0,
+          followerCount: 0
+        };
+      }
+      
+      userStats[uid].topicCount++;
+    });
+    
+    // Takipçi sayılarını al
+    const followsSnapshot = await getDocs(collection(db, "userFollows"));
+    followsSnapshot.docs.forEach(doc => {
+      const followData = doc.data();
+      const following = followData.following || [];
+      following.forEach(followedUid => {
+        if (followedUid && typeof followedUid === 'string') {
+          if (!userStats[followedUid]) {
+            userStats[followedUid] = {
+              uid: followedUid,
+              postCount: 0,
+              topicCount: 0,
+              totalReactions: 0,
+              followerCount: 0
+            };
+          }
+          userStats[followedUid].followerCount++;
+        }
+      });
+    });
+    
+    // Her kullanıcı için skor hesapla ve profil bilgilerini ekle
+    const membersWithStats = Object.values(userStats).map(stats => {
+      const profile = profiles[stats.uid] || {};
+      const score = (
+        stats.postCount * 1 +           // Her yorum 1 puan
+        stats.topicCount * 5 +          // Her konu 5 puan
+        stats.totalReactions * 2 +      // Her beğeni 2 puan
+        stats.followerCount * 3         // Her takipçi 3 puan
+      );
+      
+      return {
+        ...stats,
+        ...profile,
+        displayName: profile.displayName || profile.email?.split("@")[0] || "Kullanıcı",
+        email: profile.email || "-",
+        score: score
+      };
+    });
+    
+    // Skora göre sırala ve top 5'i al
+    const topMembers = membersWithStats
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 5);
+    
+    // Render et
+    renderTopMembers(topMembers);
+  } catch (error) {
+    console.error("Top üyeler yüklenemedi", error);
+    if (selectors.membersList) {
+      selectors.membersList.innerHTML = `
+        <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+          <p class="muted">Üyeler yüklenirken bir hata oluştu</p>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderTopMembers(members) {
+  if (!selectors.membersList) return;
+  
+  if (!members || members.length === 0) {
+    selectors.membersList.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+        <p class="muted">Henüz üye yok</p>
+      </div>
+    `;
+    return;
+  }
+  
+  selectors.membersList.innerHTML = members.map((member, index) => {
+    const rank = index + 1;
+    const displayName = member.displayName || member.email?.split("@")[0] || "Kullanıcı";
+    const avatar = firstLetter(displayName);
+    const rankClass = rank <= 3 ? `rank-${rank}` : '';
+    
+    const rankItemClass = rank <= 3 ? `rank-${rank}-item` : '';
+    
+    return `
+      <div class="member-item ${rankItemClass}" data-user-id="${member.uid}">
+        <div class="member-rank ${rankClass}">
+          ${rank}
+        </div>
+        <div class="member-avatar">
+          ${avatar}
+        </div>
+        <div class="member-info">
+          <h3>${escapeHtml(displayName)}</h3>
+          ${member.bio ? `<p>${escapeHtml(member.bio)}</p>` : ''}
+          <div class="member-stats">
+            <span><strong>${formatNumber(member.postCount)}</strong> <span class="stat-label">yorum</span></span>
+            <span><strong>${formatNumber(member.topicCount)}</strong> <span class="stat-label">konu</span></span>
+            <span><strong class="accent">${formatNumber(member.totalReactions)}</strong> <span class="stat-label">beğeni</span></span>
+            <span><strong>${formatNumber(member.followerCount)}</strong> <span class="stat-label">takipçi</span></span>
+          </div>
+        </div>
+        <div class="member-score">
+          <div>${formatNumber(member.score)}</div>
+          <div>puan</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Member item'lara tıklama event'i ekle
+  selectors.membersList.querySelectorAll('.member-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const userId = item.dataset.userId;
+      if (userId) {
+        const member = members.find(m => m.uid === userId);
+        if (member) {
+          showUserProfile(userId, member.displayName);
+        }
+      }
+    });
+    
+  });
+}
+
 function selectBoard(boardId) {
   if (!boardId) return;
   const board = state.boards.find((item) => item.id === boardId);
@@ -734,6 +1046,19 @@ function selectBoard(boardId) {
   updateTopicBoardSelect();
   selectors.topicDetail?.setAttribute("hidden", "hidden");
   updateStats();
+
+  // Mobilde topic-hub'a scroll yap
+  if (window.innerWidth <= 768) {
+    setTimeout(() => {
+      const topicHub = document.querySelector(".topic-hub");
+      if (topicHub) {
+        topicHub.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "start" 
+        });
+      }
+    }, 200);
+  }
 }
 
 function renderTopics() {
@@ -937,9 +1262,18 @@ function initTopicDetailProfileClicks() {
 function renderPosts(posts) {
   if (!selectors.postList) return;
   selectors.postList.innerHTML = "";
+  let scrollToPost = null;
+  
   posts.forEach((post) => {
     const item = document.createElement("article");
     item.className = "post-item";
+    item.dataset.postId = post.id;
+    
+    // Scroll yapılacak post'u işaretle
+    if (state.pendingScrollPostId === post.id) {
+      scrollToPost = item;
+    }
+    
     const followButton = getFollowButton(post.authorUid, post.authorName);
     const topic = state.topics.find(t => t.id === post.topicId);
     const shareData = {
@@ -995,6 +1329,20 @@ function renderPosts(posts) {
     initDeleteButtons(item);
     initProfileClicks(item);
   });
+  
+  // Mobilde yeni gönderilen post'a scroll yap
+  if (scrollToPost && window.innerWidth <= 768) {
+    setTimeout(() => {
+      scrollToPost.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "center" 
+      });
+      state.pendingScrollPostId = null;
+    }, 200);
+  } else if (scrollToPost) {
+    state.pendingScrollPostId = null;
+  }
+  
   updateStats();
 }
 
@@ -1363,8 +1711,26 @@ function handleReplyToPost(postId) {
   // Formu göster ve scroll yap
   if (selectors.replyForm) {
     selectors.replyForm.hidden = false;
-    selectors.replyForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    selectors.replyText?.focus();
+    
+    // Mobilde reply form'a scroll yap, daha iyi görünürlük için
+    if (window.innerWidth <= 768) {
+      setTimeout(() => {
+        selectors.replyForm.scrollIntoView({ 
+          behavior: "smooth", 
+          block: "center" 
+        });
+        // Scroll sonrası textarea'yı focus et
+        setTimeout(() => {
+          selectors.replyText?.focus();
+        }, 300);
+      }, 100);
+    } else {
+      selectors.replyForm.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "nearest" 
+      });
+      selectors.replyText?.focus();
+    }
   }
   
   if (selectors.replyAuthNotice) {
@@ -1581,6 +1947,16 @@ async function handleTopicSelection(topicId) {
     }
   }
 
+  // Mobilde topic detail'e scroll yap
+  if (window.innerWidth <= 768 && selectors.topicDetail) {
+    setTimeout(() => {
+      selectors.topicDetail.scrollIntoView({ 
+        behavior: "smooth", 
+        block: "start" 
+      });
+    }, 100);
+  }
+
   try {
     await updateDoc(doc(db, "forumTopics", topic.id), {
       viewCount: increment(1),
@@ -1645,6 +2021,9 @@ async function handleReplySubmit(event) {
     }
 
     const newPostRef = await addDoc(collection(db, "forumPosts"), postPayload);
+
+    // Yeni post ID'sini scroll için kaydet
+    state.pendingScrollPostId = newPostRef.id;
 
     await updateDoc(doc(db, "forumTopics", state.currentTopicId), {
       replyCount: increment(1),
@@ -2028,6 +2407,26 @@ function getUserDisplayName(user, profile = null) {
   return "Kullanıcı";
 }
 
+function updateUserMenuDialog() {
+  if (!state.currentUser) return;
+  
+  const displayName = getUserDisplayName(state.currentUser, state.userProfile);
+  const email = state.currentUser.email || "-";
+  
+  if (selectors.userDisplayNameDialog) {
+    selectors.userDisplayNameDialog.textContent = displayName;
+  }
+  if (selectors.userEmailLabelDialog) {
+    selectors.userEmailLabelDialog.textContent = email;
+  }
+  if (selectors.userAvatarDialog) {
+    selectors.userAvatarDialog.textContent = firstLetter(displayName);
+  }
+  if (selectors.userStatusLabelDialog) {
+    selectors.userStatusLabelDialog.textContent = state.currentUser.emailVerified ? "Doğrulanmış Üye" : "Ücretsiz Üye";
+  }
+}
+
 async function updateAuthUI(user) {
   state.currentUser = user;
   if (!user) {
@@ -2066,10 +2465,23 @@ async function updateAuthUI(user) {
 
   const displayName = getUserDisplayName(user, state.userProfile);
   const email = user.email || "-";
-  selectors.userDisplayName.textContent = displayName;
-  selectors.userEmailLabel.textContent = email;
-  selectors.userAvatar.textContent = firstLetter(displayName);
-  selectors.userStatusLabel.textContent = user.emailVerified ? "Doğrulanmış Üye" : "Ücretsiz Üye";
+  
+  // Header'daki user menu elementleri (eğer varsa)
+  if (selectors.userDisplayName) {
+    selectors.userDisplayName.textContent = displayName;
+  }
+  if (selectors.userEmailLabel) {
+    selectors.userEmailLabel.textContent = email;
+  }
+  if (selectors.userAvatar) {
+    selectors.userAvatar.textContent = firstLetter(displayName);
+  }
+  if (selectors.userStatusLabel) {
+    selectors.userStatusLabel.textContent = user.emailVerified ? "Doğrulanmış Üye" : "Ücretsiz Üye";
+  }
+  
+  // Dialog içindeki alanları güncelle
+  updateUserMenuDialog();
   
   // Mobil profil avatar'ını güncelle
   if (selectors.mobileProfileAvatar) {
@@ -2370,11 +2782,23 @@ async function showUserProfile(userId, userName) {
     // Profil bilgilerini göster
     const displayName = profile?.displayName || userName || "Kullanıcı";
     const email = profile?.email || "-";
+    const bio = profile?.bio || "";
     
     selectors.profileAvatar.textContent = firstLetter(displayName);
     selectors.profileName.textContent = displayName;
     selectors.profileEmail.textContent = email;
     selectors.profileMemberSince.textContent = `Üyelik: ${memberSince}`;
+    
+    // Biyografi göster
+    if (selectors.profileBio) {
+      if (bio) {
+        selectors.profileBio.textContent = bio;
+        selectors.profileBio.style.display = "block";
+      } else {
+        selectors.profileBio.textContent = "";
+        selectors.profileBio.style.display = "none";
+      }
+    }
     selectors.profilePostCount.textContent = formatNumber(postCount);
     selectors.profileReactionCount.textContent = formatNumber(totalReactions);
     selectors.profileTopicCount.textContent = formatNumber(topicCount);
@@ -2434,6 +2858,269 @@ async function showUserProfile(userId, userName) {
   } catch (error) {
     console.error("Profil yüklenemedi", error);
     showToast("Profil yüklenirken bir hata oluştu.", "error");
+  }
+}
+
+function renderBookmarks() {
+  if (!selectors.bookmarksList) return;
+  
+  if (!state.currentUser) {
+    selectors.bookmarksList.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+        <p class="muted">Giriş yapmalısınız</p>
+        <p class="muted" style="font-size: 0.85rem; margin-top: 8px;">Kaydedilen konuları görmek için giriş yapın</p>
+      </div>
+    `;
+    return;
+  }
+  
+  if (!state.followingSet.size) {
+    selectors.bookmarksList.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+        <p class="muted">Henüz kayıtlı konu yok</p>
+        <p class="muted" style="font-size: 0.85rem; margin-top: 8px;">Takip ettiğiniz kullanıcıların konuları burada görünecek</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Takip edilen kullanıcıların konularını filtrele
+  const followedTopics = state.topics.filter((topic) =>
+    state.followingSet.has(topic.authorUid)
+  );
+  
+  if (!followedTopics.length) {
+    selectors.bookmarksList.innerHTML = `
+      <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+        <p class="muted">Henüz kayıtlı konu yok</p>
+        <p class="muted" style="font-size: 0.85rem; margin-top: 8px;">Takip ettiğiniz kullanıcılar henüz konu paylaşmadı</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // En yeni konulardan başlayarak göster
+  const sortedTopics = followedTopics.sort((a, b) => {
+    const aDate = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt || 0);
+    const bDate = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt || 0);
+    return bDate - aDate;
+  });
+  
+  selectors.bookmarksList.innerHTML = sortedTopics.map((topic) => {
+    const board = state.boards.find((b) => b.id === topic.boardId);
+    const createdDate = topic.createdAt?.toDate ? topic.createdAt.toDate() : new Date(topic.createdAt || 0);
+    const timeAgo = formatRelativeTimestamp(createdDate);
+    
+    return `
+      <div class="bookmark-item" style="padding: 16px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background var(--transition-fast);" 
+           data-topic-id="${topic.id}" 
+           data-board-id="${topic.boardId}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <div style="flex: 1; min-width: 0;">
+            <h4>
+              ${escapeHtml(topic.title)}
+            </h4>
+            <p>
+              ${formatBody(topic.body?.substring(0, 150) || "")}${topic.body?.length > 150 ? '...' : ''}
+            </p>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 0.85rem; color: var(--text-muted);">
+              <span>${escapeHtml(topic.authorName)}</span>
+              <span>•</span>
+              <span>${board ? escapeHtml(board.title) : 'Forum'}</span>
+              <span>•</span>
+              <span>${timeAgo}</span>
+              ${topic.replyCount ? `<span>•</span><span>${topic.replyCount} yanıt</span>` : ''}
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Bookmark item'lara tıklama event'i ekle
+  selectors.bookmarksList.querySelectorAll('.bookmark-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const topicId = item.dataset.topicId;
+      const boardId = item.dataset.boardId;
+      if (topicId && boardId) {
+        closeDialog(selectors.bookmarksDialog);
+        if (boardId !== state.currentBoardId) {
+          selectBoard(boardId);
+          setTimeout(() => handleTopicSelection(topicId), 300);
+        } else {
+          handleTopicSelection(topicId);
+        }
+      }
+    });
+    
+  });
+}
+
+async function loadSettings() {
+  if (!state.currentUser) return;
+  
+  try {
+    const profileRef = doc(db, "userProfiles", state.currentUser.uid);
+    const profileSnap = await getDoc(profileRef);
+    const profile = profileSnap.exists() ? profileSnap.data() : {};
+    
+    const settingsRef = doc(db, "userSettings", state.currentUser.uid);
+    const settingsSnap = await getDoc(settingsRef);
+    const settings = settingsSnap.exists() ? settingsSnap.data() : {};
+    
+    // Profil ayarlarını yükle
+    if (selectors.settingsDisplayName) {
+      selectors.settingsDisplayName.value = profile.displayName || state.currentUser.displayName || state.currentUser.email?.split("@")[0] || "";
+    }
+    if (selectors.settingsBio) {
+      selectors.settingsBio.value = profile.bio || "";
+    }
+    
+    // Bildirim ayarlarını yükle
+    if (selectors.settingsEmailNotifications) {
+      selectors.settingsEmailNotifications.checked = settings.emailNotifications !== false;
+    }
+    if (selectors.settingsReplyNotifications) {
+      selectors.settingsReplyNotifications.checked = settings.replyNotifications !== false;
+    }
+    if (selectors.settingsFollowNotifications) {
+      selectors.settingsFollowNotifications.checked = settings.followNotifications !== false;
+    }
+    
+    // Tema ayarını yükle
+    if (selectors.settingsTheme) {
+      const savedTheme = localStorage.getItem("borsaForumTheme") || "light";
+      selectors.settingsTheme.value = settings.theme || savedTheme || "light";
+    }
+    
+    // E-posta doğrulama durumunu göster
+    if (selectors.settingsEmailVerified) {
+      selectors.settingsEmailVerified.checked = state.currentUser.emailVerified || false;
+    }
+    if (selectors.settingsEmailStatus) {
+      selectors.settingsEmailStatus.textContent = state.currentUser.emailVerified 
+        ? "E-posta adresiniz doğrulandı" 
+        : "E-posta adresiniz henüz doğrulanmadı";
+    }
+  } catch (error) {
+    console.error("Ayarlar yüklenemedi", error);
+  }
+}
+
+async function saveSettings() {
+  if (!state.currentUser) return;
+  
+  try {
+    setLoading(selectors.settingsSaveButton, true);
+    
+    const profileRef = doc(db, "userProfiles", state.currentUser.uid);
+    const settingsRef = doc(db, "userSettings", state.currentUser.uid);
+    
+    // Mevcut profil verilerini kontrol et
+    const profileSnap = await getDoc(profileRef);
+    const existingProfile = profileSnap.exists() ? profileSnap.data() : {};
+    
+    const profileData = {
+      displayName: selectors.settingsDisplayName?.value || existingProfile.displayName || "",
+      bio: selectors.settingsBio?.value || "",
+      updatedAt: serverTimestamp()
+    };
+    
+    const settingsData = {
+      emailNotifications: selectors.settingsEmailNotifications?.checked ?? true,
+      replyNotifications: selectors.settingsReplyNotifications?.checked ?? true,
+      followNotifications: selectors.settingsFollowNotifications?.checked ?? true,
+      theme: selectors.settingsTheme?.value || "light",
+      updatedAt: serverTimestamp()
+    };
+    
+    // Profil varsa mevcut verileri koruyarak güncelle, yoksa oluştur
+    if (profileSnap.exists()) {
+      // Mevcut verileri koruyarak güncelle (timestamp'leri koru)
+      const updatedProfile = {
+        username: existingProfile.username || state.currentUser.email?.split("@")[0] || "user",
+        displayName: profileData.displayName || existingProfile.displayName || "",
+        email: existingProfile.email || state.currentUser.email || "",
+        bio: profileData.bio || existingProfile.bio || "",
+        createdAt: existingProfile.createdAt || serverTimestamp(),
+        updatedAt: profileData.updatedAt
+      };
+      await setDoc(profileRef, updatedProfile);
+    } else {
+      // İlk oluşturuluyorsa, gerekli alanları ekle
+      await setDoc(profileRef, {
+        username: state.currentUser.email?.split("@")[0] || "user",
+        displayName: profileData.displayName,
+        email: state.currentUser.email || "",
+        bio: profileData.bio || "",
+        createdAt: serverTimestamp(),
+        updatedAt: profileData.updatedAt
+      });
+    }
+    
+    // Settings her zaman merge ile setDoc (rules'da sadece write kontrolü var)
+    await setDoc(settingsRef, settingsData, { merge: true });
+    
+    // Tema değiştiyse güncelle
+    if (settingsData.theme === "auto") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      toggleTheme(prefersDark ? "dark" : "light");
+    } else {
+      toggleTheme(settingsData.theme);
+    }
+    
+    // Profil bilgilerini state'e güncelle
+    if (profileData.displayName) {
+      state.userProfile = { ...state.userProfile, ...profileData };
+      updateAuthUI(state.currentUser);
+    }
+    
+    showToast("Ayarlar kaydedildi", "success");
+    closeDialog(selectors.settingsDialog);
+  } catch (error) {
+    console.error("Ayarlar kaydedilemedi", error);
+    showToast("Ayarlar kaydedilirken bir hata oluştu", "error");
+  } finally {
+    setLoading(selectors.settingsSaveButton, false);
+  }
+}
+
+async function handleChangePassword() {
+  if (!state.currentUser) return;
+  
+  const currentPassword = prompt("Mevcut şifrenizi girin:");
+  if (!currentPassword) return;
+  
+  const newPassword = prompt("Yeni şifrenizi girin (en az 6 karakter):");
+  if (!newPassword || newPassword.length < 6) {
+    showToast("Şifre en az 6 karakter olmalıdır", "error");
+    return;
+  }
+  
+  const confirmPassword = prompt("Yeni şifrenizi tekrar girin:");
+  if (newPassword !== confirmPassword) {
+    showToast("Şifreler eşleşmiyor", "error");
+    return;
+  }
+  
+  try {
+    // Kullanıcıyı yeniden kimlik doğrulama
+    const credential = EmailAuthProvider.credential(state.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(state.currentUser, credential);
+    
+    // Şifreyi güncelle
+    await updatePassword(state.currentUser, newPassword);
+    
+    showToast("Şifre başarıyla değiştirildi", "success");
+  } catch (error) {
+    console.error("Şifre değiştirilemedi", error);
+    if (error.code === "auth/wrong-password") {
+      showToast("Mevcut şifre yanlış", "error");
+    } else if (error.code === "auth/weak-password") {
+      showToast("Şifre çok zayıf", "error");
+    } else {
+      showToast("Şifre değiştirilirken bir hata oluştu", "error");
+    }
   }
 }
 
@@ -2703,68 +3390,7 @@ function bindEvents() {
   selectors.mobileNotifications?.addEventListener("click", (e) => {
     e.stopPropagation();
     if (state.currentUser) {
-      // Mobilde bildirim dropdown'ını göster
-      const isOpen = selectors.notificationsMenu?.classList.contains("open");
-      // Önce diğer menüleri kapat
-      selectors.userMenu?.classList.remove("open");
-      // Bildirim menüsünü toggle et
-      selectors.notificationsMenu?.classList.toggle("open");
-      
-      // Mobilde dropdown'ı bottom nav'deki bildirimler butonunun hemen üstüne yerleştir
-      if (selectors.notificationsDropdown && window.innerWidth <= 768) {
-        const notificationsBtn = selectors.mobileNotifications;
-        if (notificationsBtn) {
-          // Her açılışta pozisyonu yeniden hesapla
-          setTimeout(() => {
-            const btnRect = notificationsBtn.getBoundingClientRect();
-            
-            // Butonun pozisyonuna göre dropdown'ı yerleştir - butonun hemen üstünde
-            selectors.notificationsDropdown.style.position = "fixed";
-            selectors.notificationsDropdown.style.top = "auto";
-            
-            // Butonun üst kenarından 12px yukarıda konumlandır
-            const bottomPosition = window.innerHeight - btnRect.top + 12;
-            selectors.notificationsDropdown.style.bottom = `${bottomPosition}px`;
-            
-            // Genişlik ve pozisyon ayarları
-            if (window.innerWidth <= 480) {
-              // Küçük ekranlarda tam genişlik
-              selectors.notificationsDropdown.style.width = "calc(100vw - 16px)";
-              selectors.notificationsDropdown.style.left = "8px";
-              selectors.notificationsDropdown.style.right = "8px";
-              selectors.notificationsDropdown.style.maxWidth = "none";
-            } else {
-              // Orta ekranlarda butonun merkezine hizala
-              const dropdownWidth = Math.min(400, window.innerWidth - 24);
-              const btnCenterX = btnRect.left + (btnRect.width / 2);
-              const dropdownLeft = btnCenterX - (dropdownWidth / 2);
-              
-              // Ekran sınırlarını kontrol et
-              if (dropdownLeft < 12) {
-                selectors.notificationsDropdown.style.left = "12px";
-                selectors.notificationsDropdown.style.right = "auto";
-              } else if (dropdownLeft + dropdownWidth > window.innerWidth - 12) {
-                selectors.notificationsDropdown.style.right = "12px";
-                selectors.notificationsDropdown.style.left = "auto";
-              } else {
-                selectors.notificationsDropdown.style.left = `${dropdownLeft}px`;
-                selectors.notificationsDropdown.style.right = "auto";
-              }
-              
-              selectors.notificationsDropdown.style.width = `${dropdownWidth}px`;
-              selectors.notificationsDropdown.style.maxWidth = "400px";
-            }
-            
-            // Maksimum yükseklik - butonun üstünden ekranın üstüne kadar
-            const availableHeight = btnRect.top - 20; // 20px üstten boşluk
-            const maxHeight = Math.min(availableHeight, window.innerHeight - 120);
-            selectors.notificationsDropdown.style.maxHeight = `${maxHeight}px`;
-            
-            // Z-index'i artır
-            selectors.notificationsDropdown.style.zIndex = "1001";
-          }, 0);
-        }
-      }
+      openDialog(selectors.notificationsDialog);
     } else {
       openAuthDialog("sign-in");
     }
@@ -2772,7 +3398,8 @@ function bindEvents() {
 
   selectors.mobileProfile?.addEventListener("click", () => {
     if (state.currentUser) {
-      selectors.userMenu?.classList.toggle("open");
+      updateUserMenuDialog();
+      openDialog(selectors.userMenuDialog);
     } else {
       openAuthDialog("sign-in");
     }
@@ -2784,6 +3411,8 @@ function bindEvents() {
       const view = link.dataset.view;
       if (view === "boards") {
         showBoardsView();
+      } else if (view === "members") {
+        showMembersView();
       }
       // Mobil menüyü kapat
       selectors.header?.classList.remove("open");
@@ -2854,51 +3483,13 @@ function bindEvents() {
 
   selectors.userMenuTrigger?.addEventListener("click", (event) => {
     event.stopPropagation();
-    selectors.userMenu?.classList.toggle("open");
-    // Diğer menüleri kapat
-    selectors.notificationsMenu?.classList.remove("open");
+    updateUserMenuDialog();
+    openDialog(selectors.userMenuDialog);
   });
 
   selectors.notificationsTrigger?.addEventListener("click", (event) => {
     event.stopPropagation();
-    const isOpen = selectors.notificationsMenu?.classList.contains("open");
-    selectors.notificationsMenu?.classList.toggle("open");
-    // Diğer menüleri kapat
-    selectors.userMenu?.classList.remove("open");
-    
-    // Desktop'ta dropdown pozisyonunu ayarla
-    if (selectors.notificationsDropdown && window.innerWidth > 768) {
-      setTimeout(() => {
-        const trigger = selectors.notificationsTrigger;
-        if (trigger) {
-          const triggerRect = trigger.getBoundingClientRect();
-          
-          // Desktop'ta fixed pozisyon, trigger'ın altında
-          selectors.notificationsDropdown.style.position = "fixed";
-          selectors.notificationsDropdown.style.top = `${triggerRect.bottom + 12}px`;
-          selectors.notificationsDropdown.style.bottom = "auto";
-          
-          // Sağa hizala, ekran dışına taşmasın
-          const dropdownWidth = 360;
-          const rightPosition = window.innerWidth - triggerRect.right;
-          const leftPosition = triggerRect.left;
-          
-          // Sağdan hizala, ekran dışına taşarsa sola kaydır
-          if (rightPosition + dropdownWidth > window.innerWidth - 12) {
-            selectors.notificationsDropdown.style.right = "12px";
-            selectors.notificationsDropdown.style.left = "auto";
-          } else {
-            selectors.notificationsDropdown.style.right = `${rightPosition}px`;
-            selectors.notificationsDropdown.style.left = "auto";
-          }
-          
-          selectors.notificationsDropdown.style.width = `${dropdownWidth}px`;
-          selectors.notificationsDropdown.style.maxWidth = "360px";
-          selectors.notificationsDropdown.style.maxHeight = "500px";
-          selectors.notificationsDropdown.style.zIndex = "1001";
-        }
-      }, 0);
-    }
+    openDialog(selectors.notificationsDialog);
   });
 
   selectors.markAllReadButton?.addEventListener("click", async (event) => {
@@ -2906,32 +3497,154 @@ function bindEvents() {
     await markAllNotificationsAsRead();
   });
 
-  // Dışarı tıklandığında menüleri kapat
+  // Mobil menüyü kapat
   document.addEventListener("click", (event) => {
-    // Bildirim menüsü kontrolü
-    if (!event.target.closest(".notifications-menu") && !event.target.closest(".notifications-menu__dropdown")) {
-      selectors.notificationsMenu?.classList.remove("open");
-    }
-    // Kullanıcı menüsü kontrolü
-    if (!event.target.closest(".user-menu") && !event.target.closest(".user-menu__dropdown")) {
-      selectors.userMenu?.classList.remove("open");
-    }
-    // Mobil menüyü kapat
     if (!event.target.closest(".site-header")) {
       selectors.header?.classList.remove("open");
     }
   });
 
   selectors.signOutButton?.addEventListener("click", handleSignOut);
+  selectors.signOutButtonDialog?.addEventListener("click", () => {
+    handleSignOut();
+    closeDialog(selectors.userMenuDialog);
+  });
+
+  // Dialog içindeki action butonları
+  document.querySelectorAll(".dropdown-item[data-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const action = button.dataset.action;
+      closeDialog(selectors.userMenuDialog);
+      
+      if (action === "profile") {
+        const userId = state.currentUser?.uid;
+        const userName = getUserDisplayName(state.currentUser, state.userProfile);
+        if (userId) {
+          showUserProfile(userId, userName);
+        } else {
+          openDialog(selectors.profileDialog);
+        }
+      } else if (action === "bookmarks") {
+        renderBookmarks();
+        openDialog(selectors.bookmarksDialog);
+      } else if (action === "settings") {
+        loadSettings();
+        openDialog(selectors.settingsDialog);
+      }
+    });
+  });
 
   selectors.refreshTrending?.addEventListener("click", () => {
     loadTrendingTopics();
     showToast("Trend konular güncelleniyor...", "info");
   });
 
+  selectors.refreshMembers?.addEventListener("click", () => {
+    loadTopMembers();
+    showToast("Üye listesi güncelleniyor...", "info");
+  });
+
+  // Top Üyeler panelini aç/kapa
+  selectors.toggleMembersPanel?.addEventListener("click", () => {
+    const panel = document.getElementById("topMembersPanel");
+    if (panel) {
+      const isCollapsed = panel.classList.contains("collapsed");
+      panel.classList.toggle("collapsed");
+      selectors.toggleMembersPanel?.setAttribute("aria-expanded", isCollapsed ? "true" : "false");
+    }
+  });
+
+  // Profile dialog açıldığında bilgileri yükle
+  if (selectors.profileDialog) {
+    // MutationObserver ile dialog'un open attribute'unu izle
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'open') {
+          if (selectors.profileDialog.open) {
+            // Dialog açıldığında eğer bilgiler yüklenmemişse yükle
+            const userId = state.currentUser?.uid;
+            const userName = getUserDisplayName(state.currentUser, state.userProfile);
+            if (userId && (!selectors.profileName?.textContent || selectors.profileName.textContent === "Kullanıcı")) {
+              showUserProfile(userId, userName);
+            }
+          }
+        }
+      });
+    });
+    
+    observer.observe(selectors.profileDialog, {
+      attributes: true,
+      attributeFilter: ['open']
+    });
+  }
 
   selectors.mobileMenuToggle?.addEventListener("click", () => {
     selectors.header?.classList.toggle("open");
+  });
+
+  // Settings form submit
+  if (selectors.settingsDialog) {
+    const settingsForm = selectors.settingsDialog.querySelector('form');
+    if (settingsForm) {
+      settingsForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        await saveSettings();
+      });
+    }
+  }
+
+  // Şifre değiştirme butonu
+  selectors.settingsChangePassword?.addEventListener("click", async () => {
+    await handleChangePassword();
+  });
+
+  // Bookmarks dialog açıldığında render et
+  if (selectors.bookmarksDialog) {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'attributes' && mutation.attributeName === 'open') {
+          if (selectors.bookmarksDialog.open) {
+            renderBookmarks();
+          }
+        }
+      });
+    });
+    
+    observer.observe(selectors.bookmarksDialog, {
+      attributes: true,
+      attributeFilter: ['open']
+    });
+  }
+
+  // Window resize - Üyeler görünümü için layout güncellemesi
+  let resizeTimeout;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      const forumShell = document.querySelector(".forum-shell");
+      const insightRail = document.querySelector(".insight-rail");
+      const boardRail = selectors.boardList?.closest(".board-rail");
+      
+      if (forumShell && forumShell.classList.contains("members-view-active")) {
+        const isMobile = window.innerWidth <= 768;
+        
+        if (insightRail) {
+          if (isMobile) {
+            insightRail.classList.add("members-view-fullwidth");
+          } else {
+            insightRail.classList.remove("members-view-fullwidth");
+          }
+        }
+        
+        if (boardRail) {
+          if (isMobile) {
+            boardRail.setAttribute("hidden", "hidden");
+          } else {
+            boardRail.removeAttribute("hidden");
+          }
+        }
+      }
+    }, 150);
   });
 }
 

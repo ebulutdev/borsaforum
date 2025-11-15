@@ -71,6 +71,9 @@
             <button class="nav-link" type="button" data-view="market">
               Piyasa Verisi
             </button>
+            <button class="nav-link" type="button" data-view="members">
+              Üyeler
+            </button>
           </nav>
           <div class="site-actions">
             <button
@@ -101,9 +104,9 @@
                 Üye Ol
               </button>
             </div>
-            <div class="notifications-menu" id="notificationsMenu" hidden>
+            <div id="notificationsMenu" hidden>
               <button
-                class="icon-button notifications-menu__trigger"
+                class="icon-button"
                 id="notificationsTrigger"
                 type="button"
                 aria-label="Bildirimler"
@@ -111,26 +114,8 @@
                 <span class="icon icon-bell"></span>
                 <span class="notifications-menu__badge" id="notificationsBadge" hidden>0</span>
               </button>
-              <div class="notifications-menu__dropdown" id="notificationsDropdown" role="menu">
-                <div class="notifications-menu__header">
-                  <h3>Bildirimler</h3>
-                  <button
-                    class="icon-button icon-button--sm"
-                    type="button"
-                    id="markAllReadButton"
-                    aria-label="Tümünü okundu işaretle"
-                  >
-                    <span class="icon icon-check"></span>
-                  </button>
-                </div>
-                <div class="notifications-menu__list" id="notificationsList">
-                  <div class="notifications-menu__empty">
-                    <p>Henüz bildirim yok</p>
-                  </div>
-                </div>
-              </div>
             </div>
-            <div class="user-menu" id="userMenu" hidden>
+            <div id="userMenu" hidden>
               <button
                 class="user-menu__trigger"
                 id="userMenuTrigger"
@@ -141,25 +126,6 @@
                 <span class="user-menu__name" id="userDisplayName">Kullanıcı</span>
                 <span class="icon icon-chevron" aria-hidden="true"></span>
               </button>
-              <div class="user-menu__dropdown" role="menu">
-                <div class="user-menu__header">
-                  <span id="userEmailLabel">-</span>
-                  <span class="user-menu__status" id="userStatusLabel">Ücretsiz Üye</span>
-                </div>
-                <button class="dropdown-item" type="button" data-action="profile">
-                  Profilim
-                </button>
-                <button class="dropdown-item" type="button" data-action="bookmarks">
-                  Kaydedilenler
-                </button>
-                <button class="dropdown-item" type="button" data-action="settings">
-                  Ayarlar
-                </button>
-                <hr />
-                <button class="dropdown-item danger" type="button" id="signOutButton">
-                  Oturumu Kapat
-                </button>
-              </div>
             </div>
             <button
               class="icon-button"
@@ -438,6 +404,45 @@
         </section>
 
         <aside class="insight-rail" aria-label="Forum özet">
+          <div class="panel" id="topMembersPanel">
+            <header class="panel__header">
+              <div>
+                <h3>Top Üyeler</h3>
+                <p>Topluluk içindeki en aktif ve uzman üyeler</p>
+              </div>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button
+                  class="icon-button"
+                  id="refreshMembers"
+                  type="button"
+                  title="Listeyi yenile"
+                  aria-label="Üye listesi yenile"
+                >
+                  <span class="icon icon-refresh"></span>
+                </button>
+                <button
+                  class="icon-button"
+                  id="toggleMembersPanel"
+                  type="button"
+                  title="Göster/Gizle"
+                  aria-label="Üyeler listesini göster/gizle"
+                  aria-expanded="true"
+                >
+                  <span class="icon icon-chevron-up"></span>
+                </button>
+              </div>
+            </header>
+            <div class="members-list" id="membersList">
+              <div class="skeleton-list">
+                <div class="skeleton skeleton--member"></div>
+                <div class="skeleton skeleton--member"></div>
+                <div class="skeleton skeleton--member"></div>
+                <div class="skeleton skeleton--member"></div>
+                <div class="skeleton skeleton--member"></div>
+              </div>
+            </div>
+          </div>
+          
           <div class="panel">
             <header class="panel__header">
               <div>
@@ -455,7 +460,6 @@
             </header>
             <ul class="trend-list" id="trendingList"></ul>
           </div>
-
         </aside>
       </main>
 
@@ -704,6 +708,187 @@
       </form>
     </dialog>
 
+    <dialog class="dialog" id="notificationsDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <h2>Bildirimler</h2>
+          <div>
+            <button
+              class="icon-button icon-button--sm"
+              type="button"
+              id="markAllReadButton"
+              aria-label="Tümünü okundu işaretle"
+              title="Tümünü okundu işaretle"
+            >
+              <span class="icon icon-check"></span>
+            </button>
+            <button class="icon-button" type="button" data-dialog-close>
+              <span class="icon icon-close"></span>
+            </button>
+          </div>
+        </header>
+        <section class="dialog__body">
+          <div class="notifications-menu__list" id="notificationsList">
+            <div class="notifications-menu__empty">
+              <p>Henüz bildirim yok</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="userMenuDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <div>
+            <span class="user-menu__avatar" id="userAvatarDialog">U</span>
+            <div>
+              <h2 id="userDisplayNameDialog">Kullanıcı</h2>
+              <p id="userEmailLabelDialog">-</p>
+            </div>
+          </div>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body">
+          <div>
+            <p>
+              <span id="userStatusLabelDialog">Ücretsiz Üye</span>
+            </p>
+            <button class="dropdown-item" type="button" data-action="profile">
+              Profilim
+            </button>
+            <button class="dropdown-item" type="button" data-action="bookmarks">
+              Kaydedilenler
+            </button>
+            <button class="dropdown-item" type="button" data-action="settings">
+              Ayarlar
+            </button>
+            <hr />
+            <button class="dropdown-item danger" type="button" id="signOutButtonDialog">
+              Oturumu Kapat
+            </button>
+          </div>
+        </section>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="bookmarksDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <h2>Kaydedilenler</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body">
+          <p class="dialog__hint">
+            Takip ettiğiniz kullanıcıların paylaştığı konular burada görünür.
+          </p>
+          <div id="bookmarksList">
+            <div class="empty-state" style="padding: 40px 20px; text-align: center;">
+              <p class="muted">Henüz kayıtlı konu yok</p>
+              <p class="muted" style="font-size: 0.85rem; margin-top: 8px;">Takip ettiğiniz kullanıcıların konuları burada görünecek</p>
+            </div>
+          </div>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--primary" type="button" data-dialog-close>
+            Kapat
+          </button>
+        </footer>
+      </div>
+    </dialog>
+
+    <dialog class="dialog" id="settingsDialog">
+      <form method="dialog" class="dialog__surface">
+        <header class="dialog__header">
+          <h2>Ayarlar</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body">
+          <div class="settings-section">
+            <h3>Profil Ayarları</h3>
+            <label class="form-field">
+              <span>Kullanıcı Adı</span>
+              <input
+                type="text"
+                id="settingsDisplayName"
+                maxlength="50"
+                placeholder="Kullanıcı adınız"
+              />
+              <small>Görünen isminiz forumda bu şekilde görünecek</small>
+            </label>
+            <label class="form-field">
+              <span>Biyografi</span>
+              <textarea
+                id="settingsBio"
+                rows="3"
+                maxlength="200"
+                placeholder="Kendinizden bahsedin..."
+              ></textarea>
+              <small>En fazla 200 karakter</small>
+            </label>
+          </div>
+
+          <div class="settings-section">
+            <h3>Bildirim Ayarları</h3>
+            <label class="form-field checkbox-field">
+              <input type="checkbox" id="settingsEmailNotifications" />
+              <span>E-posta bildirimleri</span>
+              <small>Önemli güncellemeler için e-posta al</small>
+            </label>
+            <label class="form-field checkbox-field">
+              <input type="checkbox" id="settingsReplyNotifications" />
+              <span>Yanıt bildirimleri</span>
+              <small>Yorumlarınıza yapılan yanıtları bildir</small>
+            </label>
+            <label class="form-field checkbox-field">
+              <input type="checkbox" id="settingsFollowNotifications" />
+              <span>Takip bildirimleri</span>
+              <small>Biri sizi takip ettiğinde bildir</small>
+            </label>
+          </div>
+
+          <div class="settings-section">
+            <h3>Görünüm Ayarları</h3>
+            <label class="form-field">
+              <span>Tema</span>
+              <select id="settingsTheme">
+                <option value="light">Açık Tema</option>
+                <option value="dark">Koyu Tema</option>
+                <option value="auto">Sistem Ayarı</option>
+              </select>
+              <small>Forum görünümünü özelleştirin</small>
+            </label>
+          </div>
+
+          <div class="settings-section">
+            <h3>Hesap Ayarları</h3>
+            <label class="form-field checkbox-field">
+              <input type="checkbox" id="settingsEmailVerified" disabled />
+              <span>E-posta Doğrulandı</span>
+              <small id="settingsEmailStatus">-</small>
+            </label>
+            <button type="button" class="button button--outline" id="settingsChangePassword">
+              Şifre Değiştir
+            </button>
+          </div>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--ghost" type="button" data-dialog-close>
+            İptal
+          </button>
+          <button class="button button--primary" type="submit" id="settingsSaveButton">
+            Kaydet
+          </button>
+        </footer>
+      </form>
+    </dialog>
+
     <dialog class="dialog" id="profileDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
@@ -719,6 +904,7 @@
               <h3 id="profileName">Kullanıcı</h3>
               <p id="profileEmail" class="muted">-</p>
               <p id="profileMemberSince" class="muted">-</p>
+              <p id="profileBio" class="profile-bio"></p>
             </div>
           </div>
 
