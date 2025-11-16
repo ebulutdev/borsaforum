@@ -164,6 +164,8 @@ const selectors = {
   notificationsList: document.getElementById("notificationsList"),
   notificationsDialog: document.getElementById("notificationsDialog"),
   markAllReadButton: document.getElementById("markAllReadButton"),
+  termsDialog: document.getElementById("termsDialog"),
+  termsLink: document.getElementById("termsLink"),
   userMenuDialog: document.getElementById("userMenuDialog"),
   userAvatarDialog: document.getElementById("userAvatarDialog"),
   userDisplayNameDialog: document.getElementById("userDisplayNameDialog"),
@@ -1354,6 +1356,8 @@ function initProfileClicks(container) {
   avatars.forEach((avatar) => {
     avatar.style.cursor = "pointer";
     avatar.addEventListener("click", (e) => {
+      // Sil menüsü gibi aksiyon alanlarında tıklama geldiyse profili açma
+      if (e.target.closest(".post-actions")) return;
       e.stopPropagation();
       const postItem = avatar.closest(".post-item");
       const postId = postItem?.querySelector("[data-post-id]")?.dataset.postId;
@@ -1369,6 +1373,8 @@ function initProfileClicks(container) {
   names.forEach((name) => {
     name.style.cursor = "pointer";
     name.addEventListener("click", (e) => {
+      // Sil menüsü gibi aksiyon alanlarında tıklama geldiyse profili açma
+      if (e.target.closest(".post-actions")) return;
       e.stopPropagation();
       const postItem = name.closest(".post-item");
       const postId = postItem?.querySelector("[data-post-id]")?.dataset.postId;
@@ -1619,6 +1625,14 @@ function initReplyButtons(container) {
 
 function initDeleteButtons(container) {
   if (!container) return;
+  
+  // Silme alanındaki tıklamaların başka handler'lara gitmesini engelle
+  const postActions = container.querySelector(".post-actions");
+  if (postActions) {
+    postActions.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
+  }
   
   const deleteButtons = container.querySelectorAll(".post-delete-btn");
   deleteButtons.forEach((button) => {
@@ -1985,16 +1999,8 @@ async function handleReplySubmit(event) {
 
   setLoading(selectors.replySubmit, true);
   try {
-    let attachmentUrl = null;
-    const file = selectors.replyAttachmentInput?.files?.[0];
-    if (file) {
-      const storageRef = ref(
-        storage,
-        `topicAttachments/${state.currentTopicId}/${Date.now()}-${file.name}`
-      );
-      await uploadBytes(storageRef, file);
-      attachmentUrl = await getDownloadURL(storageRef);
-    }
+    // Görsel yükleme kaldırıldı
+    const attachmentUrl = null;
 
     const authorName = getUserDisplayName(state.currentUser, state.userProfile);
     const postPayload = {
@@ -2086,16 +2092,8 @@ async function handleCreateTopic(event) {
   setLoading(selectors.topicDialogSubmit, true);
 
   try {
-    let coverUrl = null;
-    const coverFile = selectors.topicCoverInput?.files?.[0];
-    if (coverFile) {
-      const coverRef = ref(
-        storage,
-        `topicCovers/${Date.now()}-${coverFile.name}`
-      );
-      await uploadBytes(coverRef, coverFile);
-      coverUrl = await getDownloadURL(coverRef);
-    }
+    // Kapak görseli yükleme kaldırıldı
+    const coverUrl = null;
 
     const authorName = getUserDisplayName(state.currentUser, state.userProfile);
     const newTopicRef = await addDoc(collection(db, "forumTopics"), {
@@ -2342,7 +2340,15 @@ async function handleGoogleSignIn() {
     if (!profileSnap.exists()) {
       // Google'dan gelen bilgileri kullan
       const displayName = user.displayName || user.email?.split("@")[0] || "Kullanıcı";
-      const username = displayName.toLowerCase().replace(/[^a-z0-9_]/g, "_").substring(0, 20);
+      let username = displayName.toLowerCase().replace(/[^a-z0-9_]/g, "_").substring(0, 20);
+      
+      // Username minimum 3 karakter olmalı (Firestore rules gereği)
+      if (username.length < 3) {
+        username = username.padEnd(3, "_");
+        if (username.length < 3) {
+          username = "user";
+        }
+      }
       
       // Kullanıcı adının benzersiz olduğundan emin ol
       let finalUsername = username;
@@ -2352,8 +2358,28 @@ async function handleGoogleSignIn() {
           query(collection(db, "userProfiles"), where("username", "==", finalUsername))
         );
         if (check.empty) break;
-        finalUsername = `${username}${counter}`;
+        // Counter eklerken de 20 karakter sınırını koru
+        const baseUsername = username.substring(0, Math.max(3, username.length - counter.toString().length));
+        finalUsername = `${baseUsername}${counter}`;
+        if (finalUsername.length > 20) {
+          finalUsername = finalUsername.substring(0, 20);
+        }
         counter++;
+        if (counter > 9999) {
+          // Çok fazla deneme oldu, timestamp kullan
+          finalUsername = `user_${Date.now().toString().slice(-8)}`;
+          break;
+        }
+      }
+      
+      // Email kontrolü
+      if (!user.email || user.email.length < 5 || user.email.length > 200) {
+        throw new Error("E-posta adresi geçersiz veya eksik");
+      }
+      
+      // Display name kontrolü
+      if (!displayName || displayName.length < 2 || displayName.length > 120) {
+        throw new Error("Görünen ad geçersiz");
       }
       
       await setDoc(profileRef, {
@@ -2369,7 +2395,19 @@ async function handleGoogleSignIn() {
     showToast("Google ile giriş yapıldı.", "success");
   } catch (error) {
     console.error("Google ile giriş başarısız", error);
-    showToast("Google ile giriş başarısız.", "error");
+    let errorMessage = "Google ile giriş başarısız.";
+    
+    if (error.code === "auth/popup-closed-by-user") {
+      errorMessage = "Giriş penceresi kapatıldı.";
+    } else if (error.code === "auth/popup-blocked") {
+      errorMessage = "Giriş penceresi engellendi. Lütfen popup engelleyiciyi kapatın.";
+    } else if (error.code === "permission-denied" || error.message?.includes("permission")) {
+      errorMessage = "İzin hatası: " + (error.message || "Profil oluşturulamadı.");
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    showToast(errorMessage, "error");
   } finally {
     setLoading(selectors.googleSignIn, false);
   }
@@ -3341,10 +3379,7 @@ function bindEvents() {
     if (replyLabel) replyLabel.textContent = "Yanıtınız";
   });
 
-  selectors.replyAttachmentInput?.addEventListener("change", (event) => {
-    const file = event.target.files?.[0];
-    selectors.replyAttachmentName.textContent = file ? file.name : "";
-  });
+  // Görsel yükleme kaldırıldığı için dosya seçimi dinleyicisi kaldırıldı
 
   selectors.createTopicForm?.addEventListener("submit", handleCreateTopic);
   selectors.createBoardForm?.addEventListener("submit", handleCreateBoard);
@@ -3615,6 +3650,23 @@ function bindEvents() {
       attributeFilter: ['open']
     });
   }
+
+  // Kullanım şartları aç/kapat
+  selectors.termsLink?.addEventListener("click", (e) => {
+    e.preventDefault();
+    if (selectors.termsDialog) openDialog(selectors.termsDialog);
+  });
+
+  // Dialog geri butonları (mobil uyumlu)
+  document.querySelectorAll("[data-dialog-back]").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const dialog = btn.closest(".dialog");
+      if (dialog && dialog.open) {
+        closeDialog(dialog);
+      }
+    });
+  });
 
   // Window resize - Üyeler görünümü için layout güncellemesi
   let resizeTimeout;

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BorsaForum | Profesyonel Borsa Topluluğu</title>
+    <title>ISBORSAFORUM | Profesyonel Borsa Topluluğu</title>
     <meta
       name="description"
       content="Borsa İstanbul yatırımcıları için gerçek zamanlı forum. Analizler, stratejiler ve topluluk desteği tek platformda."
@@ -27,9 +27,9 @@
         <div class="site-header__inner">
           <div class="brand">
             <a class="brand__logo" href="/">
-              <span class="brand__mark">BF</span>
+              <span class="brand__mark">IBF</span>
               <span class="brand__text">
-                <strong>BorsaForum</strong>
+                <strong>ISBORSAFORUM</strong>
                 <span class="brand__tagline">Borsa İstanbul Topluluğu</span>
               </span>
             </a>
@@ -164,7 +164,7 @@
         <div class="hero-banner__inner">
           <div class="hero-banner__content">
             <span class="hero-badge">Canlı Forum</span>
-            <h1>Borsa İstanbul için profesyonel yatırımcı topluluğu</h1>
+            <h1>Yatırımcı topluluğu</h1>
             <p>
               Güncel analizler, teknik göstergeler ve strateji tartışmaları. BIST100 ve
               VIOP başta olmak üzere farklı enstrümanlara dair dinamik forum konuları.
@@ -177,7 +177,7 @@
               >
                 İlk paylaşımını yap
               </button>
-              <button class="button button--ghost" type="button" id="heroViewBoards">
+              <button class="button button--ghost button--light" type="button" id="heroViewBoards">
                 Aktif konuları incele
               </button>
             </div>
@@ -257,6 +257,7 @@
             <header class="topic-hub__header">
               <div class="topic-breadcrumb">
                 <button id="boardsBackButton" type="button" class="breadcrumb-root">
+                  <span class="icon icon-grid" aria-hidden="true"></span>
                   Forumlar
                 </button>
                 <span class="icon icon-chevron-right" aria-hidden="true"></span>
@@ -275,6 +276,7 @@
                   class="button button--primary"
                   type="button"
                 >
+                  <span class="button-icon icon icon-plus" aria-hidden="true"></span>
                   Konu Aç
                 </button>
               </div>
@@ -383,16 +385,6 @@
                 </label>
                 <div class="reply-toolbar">
                   <div class="reply-actions">
-                    <label class="file-input">
-                      <input
-                        type="file"
-                        id="replyAttachmentInput"
-                        accept="image/*"
-                      />
-                      <span class="icon icon-attachment"></span>
-                      Görsel ekle
-                    </label>
-                    <span class="reply-attachment__name" id="replyAttachmentName"></span>
                   </div>
                   <button class="button button--primary" type="submit" id="replySubmit">
                     Yanıt Gönder
@@ -466,26 +458,90 @@
       <footer class="site-footer">
         <div class="site-footer__inner">
           <div class="footer-brand">
-            <span class="brand__mark brand__mark--sm">BF</span>
+            <span class="brand__mark brand__mark--sm">IBF</span>
             <div>
-              <strong>BorsaForum</strong>
+              <strong>ISBORSAFORUM</strong>
               <p>Şeffaf ve güvenilir borsa topluluğu.</p>
             </div>
           </div>
           <nav class="footer-nav" aria-label="Alt menü">
-            <a href="#">Destek</a>
-            <a href="#">Kullanım Şartları</a>
-            <a href="#">KVKK</a>
+            <a href="support.html" aria-label="Destek Merkezi">Destek</a>
+            <a href="#" id="termsLink">Kullanım Şartları</a>
+            <a href="kvkk.html">KVKK</a>
+            <a href="ads.html">Reklam Ver</a>
             <a href="#">İletişim</a>
           </nav>
-          <p class="footer-copy">© <span id="footerYear"></span> BorsaForum. Tüm hakları saklıdır.</p>
+          <p class="footer-copy">© <span id="footerYear"></span> ISBORSAFORUM. Tüm hakları saklıdır.</p>
         </div>
       </footer>
     </div>
 
+    <!-- Terms Dialog -->
+    <dialog class="dialog" id="termsDialog">
+      <div class="dialog__surface">
+        <header class="dialog__header">
+          <h2>Site Şartları ve Kuralları</h2>
+          <button class="icon-button" type="button" data-dialog-close>
+            <span class="icon icon-close"></span>
+          </button>
+        </header>
+        <section class="dialog__body" style="max-width: 920px">
+          <article class="prose">
+            <h3>COPPA Politikası (Çocukların Çevrimiçi Gizliliğini Koruma Yasası)</h3>
+            <p>
+              13 yaşının altındaki tüm kullanıcıların ISBORSAFORUM forumlarına üye olabilmek için ebeveynlerinden veya
+              vasilerinden izin almaları gerekmektedir. 13 yaş altı üyelerin katılımını memnuniyetle karşılasak da,
+              üyelik vermeden önce bir ebeveynin veya vasinin imzalı bir izin formunu faksla veya postayla
+              geri göndermesini şart koşuyoruz. Kayıt süreci veya genel olarak ISBORSAFORUM hakkında daha fazla bilgi
+              için lütfen <a href="mailto:tdxborsa@gmail.com">tdxborsa@gmail.com</a> adresine bir e‑posta gönderin.
+            </p>
+
+            <h3>Forum Kuralları</h3>
+            <p>
+              Bu foruma kayıt ücretsizdir! Aşağıda ayrıntıları verilen kurallara ve politikalara uymanızı önemle
+              rica ederiz. ISBORSAFORUM yöneticileri ve moderatörleri tüm sakıncalı mesajları bu siteden uzak
+              tutmaya çalışacak olsalar da, tüm mesajları gözden geçirmemiz imkansızdır. Tüm mesajlar yazarının
+              görüşlerini yansıtır ve site sahipleri <strong>tdxweb</strong> ile yönetici hesabı
+              <strong>tradercountx</strong> hiçbir mesajın içeriğinden sorumlu tutulamaz.
+            </p>
+            <p>
+              Bu kuralları kabul ederek, müstehcen, kaba, cinsel içerikli, nefret dolu, tehditkar veya herhangi bir yasayı
+              ihlal eden mesajlar göndermeyeceğinizi garanti etmiş olursunuz. ISBORSAFORUM sahipleri, herhangi bir nedenle
+              herhangi bir içerik öğesini kaldırma, düzenleme, taşıma veya kapatma hakkını saklı tutar.
+            </p>
+
+            <h3>⚠️ Finansal Sorumluluk Reddi ve Risk Uyarısı</h3>
+            <p>
+              Bu forumda kullanıcılar tarafından paylaşılan tüm içerikler (mesajlar, yorumlar, analizler)
+              yalnızca yazarının kişisel fikir ve görüşlerini yansıtır ve hiçbir şekilde yatırım tavsiyesi değildir.
+              Finansal piyasalarda (hisse senedi, vadeli işlemler, forex vb.) işlem yapmak yüksek risk içerir.
+              Paylaşımlara dayanarak alınan kararlardan doğabilecek doğrudan veya dolaylı hiçbir zarardan
+              ISBORSAFORUM sahipleri (<strong>tdxweb</strong>), yöneticiler veya moderatörler sorumlu tutulamaz.
+              Yatırım kararlarınızı vermeden önce mutlaka kendi araştırmanızı yapınız ve gerekirse lisanslı
+              bir yatırım danışmanına başvurunuz.
+            </p>
+
+            <h3>Genel Kurallar</h3>
+            <ul>
+              <li>Kabalık, hakaret, kişisel saldırı, nefret söylemi ve kışkırtıcı gönderiler yasaktır.</li>
+              <li>Anlamsız/tekrarlı gönderilerle spam yapmak ve reklam yapmak yasaktır.</li>
+              <li>Konuları öne çıkarmak için makul süreler bekleyin (genel: 24s, sorun giderme: 12s).</li>
+              <li>Topluluk standartlarını ihlal eden veya cinsel içerikli sitelere bağlantılar yasaktır.</li>
+              <li>Yasa dışı faaliyetler (yazılım/müzik korsanlığı vb.) ve Fikri Mülkiyet ihlallerinin tartışılması yasaktır.</li>
+            </ul>
+          </article>
+        </section>
+        <footer class="dialog__footer">
+          <button class="button button--ghost" type="button" data-dialog-close>Kapat</button>
+        </footer>
+      </div>
+    </dialog>
     <dialog class="dialog" id="topicDialog">
       <form method="dialog" class="dialog__surface" id="createTopicForm">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2>Yeni Konu Aç</h2>
           <button class="icon-button" type="button" data-dialog-close>
             <span class="icon icon-close"></span>
@@ -532,11 +588,6 @@
             />
             <small>Etiketleri virgülle ayırın. En fazla beş etiket.</small>
           </label>
-          <label class="form-field">
-            <span>Öne Çıkan Kapak</span>
-            <input type="file" id="topicCoverInput" accept="image/*" />
-            <small>İsteğe bağlı. Maksimum 1 MB.</small>
-          </label>
         </section>
         <footer class="dialog__footer">
           <button class="button button--ghost" type="button" data-dialog-close>
@@ -552,6 +603,9 @@
     <dialog class="dialog" id="authDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2 id="authDialogTitle">Hesabına Giriş Yap</h2>
           <button class="icon-button" type="button" data-dialog-close>
             <span class="icon icon-close"></span>
@@ -711,6 +765,9 @@
     <dialog class="dialog" id="notificationsDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2>Bildirimler</h2>
           <div>
             <button
@@ -740,6 +797,9 @@
     <dialog class="dialog" id="userMenuDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <div>
             <span class="user-menu__avatar" id="userAvatarDialog">U</span>
             <div>
@@ -777,6 +837,9 @@
     <dialog class="dialog" id="bookmarksDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2>Kaydedilenler</h2>
           <button class="icon-button" type="button" data-dialog-close>
             <span class="icon icon-close"></span>
@@ -804,6 +867,9 @@
     <dialog class="dialog" id="settingsDialog">
       <form method="dialog" class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2>Ayarlar</h2>
           <button class="icon-button" type="button" data-dialog-close>
             <span class="icon icon-close"></span>
@@ -892,6 +958,9 @@
     <dialog class="dialog" id="profileDialog">
       <div class="dialog__surface">
         <header class="dialog__header">
+          <button class="icon-button dialog-back" type="button" data-dialog-back aria-label="Geri">
+            <span class="icon icon-chevron-left"></span>
+          </button>
           <h2>Kullanıcı Profili</h2>
           <button class="icon-button" type="button" data-dialog-close>
             <span class="icon icon-close"></span>

@@ -156,7 +156,9 @@ service cloud.firestore {
         && isStringBetween(request.resource.data.username, 3, 20)
         && isStringBetween(request.resource.data.displayName, 2, 120)
         && isStringBetween(request.resource.data.email, 5, 200)
-        && isOptionalString(request.resource.data.bio, 200);
+        && isOptionalString(request.resource.data.bio, 200)
+        && (isTimestamp(request.resource.data.createdAt) || !("createdAt" in request.resource.data))
+        && (isTimestamp(request.resource.data.updatedAt) || !("updatedAt" in request.resource.data));
       allow update: if isSignedIn() 
         && request.auth.uid == userId
         // updateDoc ile sadece displayName, bio ve updatedAt güncellenebilir

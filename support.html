@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ISBORSAFORUM | Destek Merkezi</title>
+    <meta name="description" content="ISBORSAFORUM yardım ve destek merkezi." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="theme-light support-page">
+    <div class="page">
+      <header class="site-header" data-shadow="false">
+        <div class="site-header__inner">
+          <div class="brand">
+            <a class="brand__logo" href="/">
+              <span class="brand__mark">IBF</span>
+              <span class="brand__text">
+                <strong>ISBORSAFORUM</strong>
+                <span class="brand__tagline">Destek Merkezi</span>
+              </span>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main class="forum-shell" style="grid-template-columns: minmax(0,1fr); padding-bottom: 48px;">
+        <section class="panel" style="grid-column: 1 / -1; max-width: 1100px; margin: 24px auto;">
+          <header class="panel__header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="icon-button page-back" type="button" onclick="history.back()" aria-label="Geri">
+                <span class="icon icon-chevron-left"></span>
+              </button>
+              <h2>Yardım ve Sık Sorulan Sorular</h2>
+              <p>Forumun kullanımı, hesap işlemleri ve topluluk kuralları hakkında hızlı rehber.</p>
+            </div>
+          </header>
+          <div class="panel__body support-layout">
+            <aside class="panel" style="position: sticky; top: 16px; height: fit-content;">
+              <nav class="panel__body" style="display: flex; flex-direction: column; gap: 6px;">
+                <a href="#genel" class="nav-link">Genel Bilgiler</a>
+                <a href="#forum" class="nav-link">Forum, Konular ve Mesajlar</a>
+                <a href="#hesap" class="nav-link">Hesap Yönetimi</a>
+                <a href="#icerik" class="nav-link">İçerik Oluşturma</a>
+                <a href="#bildirim" class="nav-link">Bildirimler ve Takip</a>
+                <a href="#guvenlik" class="nav-link">Güvenlik ve Kurallar</a>
+                <a href="#iletisim" class="nav-link">İletişim</a>
+              </nav>
+            </aside>
+
+            <section id="content" class="panel" style="padding: 0;">
+              <div class="panel__body" style="padding: 16px;">
+                <div class="support-grid">
+                  <article id="genel" class="support-card">
+                    <h4>Genel Bilgiler</h4>
+                    <p>ISBORSAFORUM; Borsa İstanbul odaklı, yatırımcıların bilgi paylaşımı yaptığı topluluk platformudur. Forumlar, konular ve mesajlardan oluşur. Konuları takip edebilir, beğenebilir ve yanıtlayabilirsiniz.</p>
+                  </article>
+                  <article id="forum" class="support-card">
+                    <h4>Forum, Konular ve Mesajlar</h4>
+                    <p>Konular listeden seçilir; başlığa tıklayarak detayına girersiniz. “Yanıtla” ile katkı verin, gerekirse alıntılayarak belirli mesaja cevap yazın. Filtre ve sıralama seçenekleriyle aktif/yanıtsız konuları bulun.</p>
+                  </article>
+                  <article id="hesap" class="support-card">
+                    <h4>Hesap Yönetimi</h4>
+                    <p>Profil menüsünden görünen ad, biyografi ve bildirim tercihlerini düzenleyebilirsiniz. Şifre değişikliği de aynı menüden yapılır.</p>
+                  </article>
+                  <article id="icerik" class="support-card">
+                    <h4>İçerik Oluşturma</h4>
+                    <p>“Konu Aç” butonuyla yeni başlık oluşturun. Net bir başlık, kısa bir özet ve ilgili etiketler eklemek, daha fazla kullanıcıya ulaşmanızı sağlar.</p>
+                  </article>
+                  <article id="bildirim" class="support-card">
+                    <h4>Bildirimler ve Takip</h4>
+                    <p>Takip ettiğiniz yazarların ve yanıtlarınızın bildirimlerini profildeki “Bildirimler” alanından takip edin. Dilerseniz e‑posta bildirimlerini Ayarlar’dan kapatabilirsiniz.</p>
+                  </article>
+                  <article id="guvenlik" class="support-card">
+                    <h4>Güvenlik ve Kurallar</h4>
+                    <p>Topluluk kurallarına uyun; hakaret, spam ve yasa dışı içeriklerden kaçının. Detaylı kurallar için Kullanım Şartları sayfasını inceleyin.</p>
+                  </article>
+                  <article id="iletisim" class="support-card">
+                    <h4>İletişim</h4>
+                    <p>Destek, öneri ve şikayet için bize e‑posta gönderin: <a href="mailto:tdxborsa@gmail.com?subject=ISBORSAFORUM%20Destek">tdxborsa@gmail.com</a></p>
+                  </article>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <div class="footer-brand">
+            <span class="brand__mark brand__mark--sm">IBF</span>
+            <div>
+              <strong>ISBORSAFORUM</strong>
+              <p>Şeffaf ve güvenilir borsa topluluğu.</p>
+            </div>
+          </div>
+          <p class="footer-copy">© <span id="footerYear"></span> ISBORSAFORUM</p>
+        </div>
+      </footer>
+    </div>
+    <script>
+      // Yıl güncelle
+      const y = document.getElementById("footerYear");
+      if (y) y.textContent = new Date().getFullYear().toString();
+    </script>
+  </body>
+  </html>
+

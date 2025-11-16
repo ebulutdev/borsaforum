@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ISBORSAFORUM | Reklam ve İş Birlikleri</title>
+    <meta name="description" content="ISBORSAFORUM reklam modelleri ve iş birlikleri için başvuru formu." />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="theme-light support-page">
+    <div class="page">
+      <header class="site-header" data-shadow="false">
+        <div class="site-header__inner">
+          <div class="brand">
+            <a class="brand__logo" href="/">
+              <span class="brand__mark">IBF</span>
+              <span class="brand__text">
+                <strong>ISBORSAFORUM</strong>
+                <span class="brand__tagline">Reklam ve İş Birlikleri</span>
+              </span>
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main class="forum-shell" style="grid-template-columns: minmax(0,1fr); padding-bottom: 48px;">
+        <section class="panel" style="grid-column: 1 / -1; max-width: 900px; margin: 24px auto;">
+          <header class="panel__header">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <button class="icon-button page-back" type="button" onclick="history.back()" aria-label="Geri">
+                <span class="icon icon-chevron-left"></span>
+              </button>
+              <h2>Reklam Ver / İş Birliği Talebi</h2>
+              <p>Hedef kitlenize uygun reklam çözümleri ve sponsorluk seçenekleri için formu doldurun, en kısa sürede dönüş yapalım.</p>
+            </div>
+          </header>
+          <section class="panel__body">
+            <form id="adsForm" class="ads-form" novalidate>
+              <label class="form-field">
+                <span>İsminiz veya yetkili kişi</span>
+                <input type="text" id="adsName" required placeholder="Ad Soyad" />
+              </label>
+              <label class="form-field">
+                <span>Firma / Marka</span>
+                <input type="text" id="adsCompany" required placeholder="Firma adı" />
+              </label>
+              <label class="form-field">
+                <span>E‑posta adresiniz</span>
+                <input type="email" id="adsEmail" required placeholder="ornek@firma.com" />
+              </label>
+              <label class="form-field">
+                <span>Telefon (isteğe bağlı)</span>
+                <input type="tel" id="adsPhone" placeholder="+90 5xx xxx xx xx" />
+              </label>
+              <label class="form-field">
+                <span>Mesajınız</span>
+                <textarea id="adsMessage" rows="5" required placeholder="Hedef kitleniz, bütçe aralığı, yayın süresi vb."></textarea>
+              </label>
+              <div class="dialog__footer" style="padding: 0; margin-top: 8px;">
+                <button class="button button--ghost" type="reset">Temizle</button>
+                <button class="button button--primary" type="submit">Gönder</button>
+              </div>
+              <p class="muted" style="margin-top: 8px;">Başvuru, e‑posta ile <a href="mailto:tdxborsa@gmail.com">tdxborsa@gmail.com</a> adresine iletilir.</p>
+            </form>
+          </section>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="site-footer__inner">
+          <div class="footer-brand">
+            <span class="brand__mark brand__mark--sm">IBF</span>
+            <div>
+              <strong>ISBORSAFORUM</strong>
+              <p>Şeffaf ve güvenilir borsa topluluğu.</p>
+            </div>
+          </div>
+          <p class="footer-copy">© <span id="footerYear"></span> ISBORSAFORUM</p>
+        </div>
+      </footer>
+    </div>
+    <script>
+      // Yıl
+      const y = document.getElementById("footerYear");
+      if (y) y.textContent = new Date().getFullYear().toString();
+      // Basit mailto gönderimi
+      const form = document.getElementById("adsForm");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const name = document.getElementById("adsName").value.trim();
+        const company = document.getElementById("adsCompany").value.trim();
+        const email = document.getElementById("adsEmail").value.trim();
+        const phone = document.getElementById("adsPhone").value.trim();
+        const msg = document.getElementById("adsMessage").value.trim();
+        if (!name || !company || !email || !msg) {
+          alert("Lütfen gerekli alanları doldurun.");
+          return;
+        }
+        const subject = encodeURIComponent("ISBORSAFORUM Reklam / İş Birliği Talebi");
+        const body = encodeURIComponent(
+`İsim: ${name}
+Firma/Marka: ${company}
+E‑posta: ${email}
+Telefon: ${phone}
+
+Mesaj:
+${msg}`
+        );
+        window.location.href = `mailto:tdxborsa@gmail.com?subject=${subject}&body=${body}`;
+      });
+    </script>
+  </body>
+  </html>
+
