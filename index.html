@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      // GitHub Pages için base path'i dinamik olarak ayarla
+      (function() {
+        const path = window.location.pathname;
+        if (path.includes('/borsaforum/')) {
+          const base = document.createElement('base');
+          base.href = '/borsaforum/';
+          document.head.insertBefore(base, document.head.firstChild);
+        }
+      })();
+    </script>
     <title>ISBORSAFORUM | Profesyonel Borsa Topluluğu</title>
     <meta
       name="description"
