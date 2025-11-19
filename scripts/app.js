@@ -1907,6 +1907,12 @@ function updateTopicBoardSelect() {
 }
 
 function subscribeBoards() {
+  if (!db) {
+    console.warn("⚠️ Firestore kullanılamıyor. Firebase yapılandırmasını kontrol edin.");
+    if (selectors.boardSkeleton) selectors.boardSkeleton.style.display = "none";
+    if (selectors.boardEmptyState) selectors.boardEmptyState.hidden = false;
+    return;
+  }
   if (state.unsubBoards) state.unsubBoards();
   if (selectors.boardSkeleton) selectors.boardSkeleton.style.display = "flex";
   const boardCollection = collection(db, "forumBoards");
@@ -3296,6 +3302,10 @@ function updateStats() {
 }
 
 function subscribeStats() {
+  if (!db) {
+    console.warn("⚠️ Firestore kullanılamıyor. İstatistikler yüklenemiyor.");
+    return;
+  }
   // Tüm yorumları dinle
   const allPostsQuery = collection(db, "forumPosts");
   onSnapshot(allPostsQuery, (snapshot) => {
@@ -3335,6 +3345,10 @@ function subscribeStats() {
 }
 
 async function loadTrendingTopics() {
+  if (!db) {
+    console.warn("⚠️ Firestore kullanılamıyor. Trend konular yüklenemiyor.");
+    return;
+  }
   try {
     const trendingQuery = query(
       collection(db, "forumTopics"),
@@ -3820,9 +3834,19 @@ function bindEvents() {
 }
 
 function initializeAuthWatcher() {
-  onAuthStateChanged(auth, (user) => {
-    updateAuthUI(user);
-  });
+  if (!auth) {
+    console.warn("⚠️ Firebase Auth kullanılamıyor. Yapılandırmayı kontrol edin.");
+    updateAuthUI(null);
+    return;
+  }
+  try {
+    onAuthStateChanged(auth, (user) => {
+      updateAuthUI(user);
+    });
+  } catch (error) {
+    console.error("❌ Auth watcher başlatılamadı:", error);
+    updateAuthUI(null);
+  }
 }
 
 function loadTopicFromUrl() {
@@ -3853,16 +3877,26 @@ function loadTopicFromUrl() {
 }
 
 function init() {
-  restoreTheme();
-  bindEvents();
-  initializeAuthWatcher();
-  subscribeBoards();
-  subscribeStats();
-  loadTrendingTopics();
-  toggleHeaderShadow();
-  
-  // URL'den topic yükle
-  setTimeout(() => loadTopicFromUrl(), 1000);
+  try {
+    restoreTheme();
+    bindEvents(); // Event listener'ları bağla - Firebase olmasa bile çalışmalı
+    initializeAuthWatcher();
+    subscribeBoards();
+    subscribeStats();
+    loadTrendingTopics();
+    toggleHeaderShadow();
+    
+    // URL'den topic yükle
+    setTimeout(() => loadTopicFromUrl(), 1000);
+  } catch (error) {
+    console.error("❌ Uygulama başlatılamadı:", error);
+    // En azından event listener'ların çalışması için bindEvents'i tekrar çağır
+    try {
+      bindEvents();
+    } catch (e) {
+      console.error("❌ Event listener'lar bağlanamadı:", e);
+    }
+  }
 }
 
 init();
