@@ -169,6 +169,34 @@ service cloud.firestore {
         && isOptionalString(request.resource.data.bio, 200); // bio güncellenebilir (opsiyonel)
     }
 
+    // Public username reservations
+    // - Create: herkese açık (oturumsuz), yalnızca 'reservedAt' alanıyla ve 'uid' null olmalı
+    // - Update (claim): sadece oturum sahibi, 'uid' kendi UID'i ile set edebilir ve 'claimedAt' ekleyebilir
+    // - Read: herkese açık (mevcut mu kontrolü için)
+    match /usernames/{uname} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly(["reservedAt", "uid"])
+        && request.resource.data.uid == null
+        && isTimestamp(request.resource.data.reservedAt)
+        // uname uzunluğu 3-20 (doc id üzerinden kontrol)
+        && isStringBetween(uname, 3, 20);
+
+      allow update: if isSignedIn()
+        // yalnızca ilk defa claim; mevcutta uid boş olmalı
+        && resource.data.uid == null
+        // sadece bu alanlar güncellenebilir
+        && request.resource.data.keys().hasOnly(["reservedAt", "uid", "claimedAt"])
+        // uid, oturumdaki kullanıcı olmalı
+        && request.resource.data.uid == request.auth.uid
+        // zaman alanları timestamp olmalı
+        && isTimestamp(request.resource.data.reservedAt)
+        && (isTimestamp(request.resource.data.claimedAt) || !("claimedAt" in request.resource.data));
+
+      // Silme: sadece admin
+      allow delete: if isAdmin();
+    }
+
     // Notifications
     match /notifications/{notificationId} {
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;

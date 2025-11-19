@@ -20,6 +20,8 @@
       type="image/svg+xml"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='12' fill='%23142338'/%3E%3Cpath d='M18 32.4V15.6l12 8.4-12 8.4Z' fill='%23F5B400'/%3E%3C/svg%3E"
     />
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9933416378180372" crossorigin="anonymous"></script>
   </head>
   <body class="theme-light">
     <div class="page">
@@ -64,12 +66,6 @@
             </button>
             <button class="nav-link" type="button" data-view="calendar">
               Takvim
-            </button>
-            <button class="nav-link" type="button" data-view="insights">
-              Görünümler
-            </button>
-            <button class="nav-link" type="button" data-view="market">
-              Piyasa Verisi
             </button>
             <button class="nav-link" type="button" data-view="members">
               Üyeler
@@ -292,6 +288,7 @@
                     <option value="all">Tüm konular</option>
                     <option value="unanswered">Yanıtsız</option>
                     <option value="watching">Takip Ettiklerim</option>
+                    <option value="watching_all">Takip Ettiklerim (Tümü)</option>
                     <option value="popular">En popüler</option>
                   </select>
                 </label>
@@ -396,6 +393,24 @@
         </section>
 
         <aside class="insight-rail" aria-label="Forum özet">
+          <div class="panel" id="followedSummaryPanel">
+            <header class="panel__header">
+              <div>
+                <h3>Takip Ettiklerim</h3>
+                <p>Küçük özet (son 10 konu)</p>
+              </div>
+              <button
+                class="icon-button"
+                id="refreshFollowedSummary"
+                type="button"
+                title="Yenile"
+                aria-label="Takiptekileri yenile"
+              >
+                <span class="icon icon-refresh"></span>
+              </button>
+            </header>
+            <ul class="trend-list trend-list--compact" id="followedSummaryList"></ul>
+          </div>
           <div class="panel" id="topMembersPanel">
             <header class="panel__header">
               <div>
@@ -661,11 +676,10 @@
                 required
                 minlength="3"
                 maxlength="20"
-                pattern="[a-zA-Z0-9_]+"
                 placeholder="örn: yatirimci123"
                 autocomplete="username"
               />
-              <small class="muted-text">3-20 karakter, sadece harf, rakam ve alt çizgi</small>
+              <small class="muted-text">3-20 karakter sadece harf, rakam ve alt çizgi</small>
             </label>
             <label class="form-field">
               <span>E-posta</span>

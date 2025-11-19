@@ -34,6 +34,7 @@ import { auth, googleProvider, db, storage } from "./firebase-init.js";
 const state = {
   boards: [],
   topics: [],
+  followedGlobal: [],
   posts: [],
   trending: [],
   moderators: [],
@@ -147,6 +148,8 @@ const selectors = {
   signOutButton: document.getElementById("signOutButton"),
   refreshTrending: document.getElementById("refreshTrending"),
   trendingList: document.getElementById("trendingList"),
+  followedSummaryList: document.getElementById("followedSummaryList"),
+  refreshFollowedSummary: document.getElementById("refreshFollowedSummary"),
   messageArea: document.getElementById("messageArea"),
   membersList: document.getElementById("membersList"),
   refreshMembers: document.getElementById("refreshMembers"),
@@ -311,6 +314,8 @@ function updateFollowingState(following) {
   const next = Array.isArray(following) ? following.filter(Boolean) : [];
   state.following = next;
   state.followingSet = new Set(next);
+  // Takip edilenler güncellendiğinde global konuları yükle
+  loadFollowedTopicsGlobal();
   renderFollowedTopics();
   renderBookmarks(); // Bookmarks'ı da güncelle
   refreshFollowButtons();
@@ -453,6 +458,83 @@ async function handleFollowToggle(button) {
   }
 }
 
+// Takip edilen yazarların tüm forumlardaki son konularını topla
+async function loadFollowedTopicsGlobal() {
+  if (!state.currentUser || state.followingSet.size === 0) {
+    state.followedGlobal = [];
+    renderFollowedSummary();
+    if (state.topicFilter === "watching_all") renderTopics();
+    return;
+  }
+  try {
+    const uids = Array.from(state.followingSet);
+    const perUserLimit = 3; // toplamı sınırlamak için
+    const results = [];
+    // Firestore 'in' operatörü 10 elemanla sınırlı; güvenli yaklaşım: kullanıcı başına sorgu
+    for (const uid of uids) {
+      const q = query(
+        collection(db, "forumTopics"),
+        where("authorUid", "==", uid),
+        orderBy("lastReplyAt", "desc"),
+        limit(perUserLimit)
+      );
+      const snap = await getDocs(q);
+      snap.forEach((docSnap) => {
+        results.push({ id: docSnap.id, ...docSnap.data() });
+      });
+      // Çok büyük takip listeleri için erken kes
+      if (results.length > 50) break;
+    }
+    // Tarihe göre sırala ve kopyala
+    state.followedGlobal = results
+      .sort((a, b) => {
+        const aDate = a.lastReplyAt?.toDate ? a.lastReplyAt.toDate() : new Date(a.lastReplyAt || 0);
+        const bDate = b.lastReplyAt?.toDate ? b.lastReplyAt.toDate() : new Date(b.lastReplyAt || 0);
+        return bDate - aDate;
+      })
+      .slice(0, 100);
+  } catch (error) {
+    console.error("Global takip konuları alınamadı", error);
+    state.followedGlobal = [];
+  }
+  renderFollowedSummary();
+  if (state.topicFilter === "watching_all") renderTopics();
+}
+
+function renderFollowedSummary() {
+  const list = selectors.followedSummaryList;
+  if (!list) return;
+  list.innerHTML = "";
+  const items = state.followedGlobal.slice(0, 10);
+  if (!items.length) {
+    const li = document.createElement("li");
+    li.className = "trend-item";
+    li.innerHTML = `<span class="comment-meta">Takip ettiğiniz yazarlardan yeni konu yok.</span>`;
+    list.append(li);
+    return;
+  }
+  const boardsById = state.boards.reduce((map, b) => {
+    map[b.id] = b.title;
+    return map;
+  }, {});
+  items.forEach((topic) => {
+    const li = document.createElement("li");
+    li.className = "trend-item";
+    const boardTitle = boardsById[topic.boardId] || "Forum";
+    li.innerHTML = `
+      <strong class="post-title">${escapeHtml(topic.title || "Konu")}</strong>
+      <span class="comment-meta">${escapeHtml(boardTitle)} • ${escapeHtml(topic.authorName || "")} • ${formatRelativeTimestamp(topic.lastReplyAt)}</span>
+    `;
+    li.addEventListener("click", () => {
+      // İlgili board'a geçip konuya git
+      if (topic.boardId && topic.id) {
+        selectBoard(topic.boardId);
+        setTimeout(() => handleTopicSelection(topic.id), 400);
+      }
+    });
+    list.append(li);
+  });
+}
 function showToast(message, type = "info") {
   if (!selectors.messageArea) return;
   const toast = document.createElement("div");
@@ -943,10 +1025,11 @@ async function loadTopMembers() {
       
       return {
         ...stats,
-        ...profile,
         displayName: profile.displayName || profile.email?.split("@")[0] || "Kullanıcı",
-        email: profile.email || "-",
+        username: profile.username || "",
+        bio: profile.bio || "",
         score: score
+        // Email gizlendi - güvenlik için objeden çıkarıldı
       };
     });
     
@@ -1173,6 +1256,10 @@ function filterTopics(topics) {
     if (!state.currentUser) return [];
     if (!state.followingSet.size) return [];
     return topics.filter((topic) => state.followingSet.has(topic.authorUid));
+  }
+  if (filterValue === "watching_all") {
+    // Global görünüm: takip edilen tüm yazarların son konuları
+    return state.followedGlobal.slice();
   }
   if (filterValue === "popular") {
     return topics.filter((topic) => (topic.replyCount ?? 0) > 5 || (topic.viewCount ?? 0) > 500);
@@ -2243,10 +2330,6 @@ async function handleSignUp(event) {
     return;
   }
   
-  if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    showToast("Kullanıcı adı sadece harf, rakam ve alt çizgi içerebilir.", "error");
-    return;
-  }
   
   if (password !== confirmPassword) {
     showToast("Parolalar eşleşmiyor.", "error");
@@ -2255,23 +2338,42 @@ async function handleSignUp(event) {
   
   setLoading(event.submitter, true);
   let credential = null;
+  const usernameLower = username.toLowerCase();
+  const usernameDocRef = doc(db, "usernames", usernameLower);
   try {
-    // Kullanıcı adının kullanılabilir olup olmadığını kontrol et
-    const usernameCheck = await getDocs(
-      query(collection(db, "userProfiles"), where("username", "==", username.toLowerCase()))
-    );
-    if (!usernameCheck.empty) {
+    // Kullanıcı adını atomik olarak rezerve et (yarış koşullarına karşı güvenli)
+    try {
+      await runTransaction(db, async (tx) => {
+        const snap = await tx.get(usernameDocRef);
+        if (snap.exists()) {
+          throw new Error("USERNAME_TAKEN");
+        }
+        tx.set(usernameDocRef, { reservedAt: serverTimestamp(), uid: null });
+      });
+    } catch (e) {
+      if (e?.message === "USERNAME_TAKEN") {
       showToast("Bu kullanıcı adı zaten kullanılıyor.", "error");
+      } else {
+        console.error("Kullanıcı adı rezervasyonu başarısız", e);
+        showToast("Kullanıcı adı rezervasyonu başarısız oldu. Lütfen tekrar deneyin.", "error");
+      }
       setLoading(event.submitter, false);
       return;
     }
     
     credential = await createUserWithEmailAndPassword(auth, email, password);
+    // Rezervasyonu kullanıcı ile ilişkilendir
+    try {
+      await updateDoc(usernameDocRef, { uid: credential.user.uid, claimedAt: serverTimestamp() });
+    } catch (e) {
+      // Yine de profil oluşturmaya devam et; rezervasyon güncellemesi başarısız olsa bile profil yazılacak
+      console.warn("Kullanıcı adı rezervasyonu güncellenemedi", e);
+    }
     
     // Kullanıcı profilini oluştur
     try {
       await setDoc(doc(db, "userProfiles", credential.user.uid), {
-        username: username.toLowerCase(),
+        username: usernameLower,
         displayName: username,
         email: email,
         createdAt: serverTimestamp(),
@@ -2279,6 +2381,10 @@ async function handleSignUp(event) {
       });
     } catch (profileError) {
       console.error("Profil oluşturulamadı, ancak hesap oluşturuldu", profileError);
+      // Rezervasyonu temizle ki kullanıcı tekrar deneyebilsin
+      try {
+        await deleteDoc(usernameDocRef);
+      } catch {}
       // Profil oluşturulamadı ama hesap oluşturuldu, kullanıcıya bilgi ver
       showToast("Hesap oluşturuldu ancak profil oluşturulurken bir sorun oluştu. Lütfen tekrar giriş yapın.", "warning");
       closeDialog(selectors.authDialog);
@@ -2291,6 +2397,10 @@ async function handleSignUp(event) {
     showToast("Üyelik tamamlandı. Lütfen e-posta doğrulaması yapın.", "success");
   } catch (error) {
     console.error("Üyelik oluşturulamadı", error);
+    // Hesap oluşturulamadıysa rezervasyonu bırak
+    try {
+      await deleteDoc(usernameDocRef);
+    } catch {}
     
     // Eğer hesap oluşturuldu ama profil oluşturulamadıysa, kullanıcıyı bilgilendir
     if (credential && error.code === "permission-denied") {
@@ -2533,6 +2643,8 @@ async function updateAuthUI(user) {
 
   subscribeToFollowDoc(user.uid);
   subscribeToNotifications(user.uid);
+  // Uygulama açılışında global takip konularını hazırla
+  loadFollowedTopicsGlobal();
 }
 
 function subscribeToNotifications(userId) {
@@ -2819,7 +2931,9 @@ async function showUserProfile(userId, userName) {
     
     // Profil bilgilerini göster
     const displayName = profile?.displayName || userName || "Kullanıcı";
-    const email = profile?.email || "-";
+    // Email'i sadece kendi profilinde göster, diğer kullanıcılar için gizle
+    const isOwnProfile = state.currentUser && userId === state.currentUser.uid;
+    const email = isOwnProfile ? (profile?.email || "-") : "Gizli";
     const bio = profile?.bio || "";
     
     selectors.profileAvatar.textContent = firstLetter(displayName);
@@ -3666,6 +3780,11 @@ function bindEvents() {
         closeDialog(dialog);
       }
     });
+  });
+
+  // Sağ panel: Takip özetini yenile
+  selectors.refreshFollowedSummary?.addEventListener("click", () => {
+    loadFollowedTopicsGlobal();
   });
 
   // Window resize - Üyeler görünümü için layout güncellemesi
